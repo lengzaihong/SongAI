@@ -66,17 +66,47 @@ def main():
     st.title("Song Recommender System Based on Lyrics Emotion and Genre")
     df = download_data_from_drive()
     df['Predicted Genre'] = df.apply(predict_genre, axis=1)
+    
+    # Search bar for song name
+    search_term = st.text_input("Enter a Song Name").strip()
 
-    st.write("Original Dataset with Predicted Genres:")
-    st.write(df.head())
+    if search_term:
+        # Filter songs based on the search term
+        filtered_songs = df[df['Song Title'].str.contains(search_term, case=False, na=False)]
 
-    song_list = df['Song Title'].unique()
-    selected_song = st.selectbox("Select a Song", song_list)
+        if filtered_songs.empty:
+            st.write("No songs found matching the search term.")
+        else:
+            # Display the filtered songs
+            st.write(f"### Search Results for: {search_term}")
+            for idx, row in filtered_songs.iterrows():
+                with st.container():
+                    st.markdown(f"No. {idx + 1}: {row['Song Title']}")
+                    st.markdown(f"Artist: {row['Artist']}")
+                    st.markdown(f"Album: {row['Album']}")
+                    
+                    # Safely handle 'Release Date'
+                    release_date = pd.to_datetime(row['Release Date'], errors='coerce')
+                    if pd.notna(release_date):
+                        st.markdown(f"Release Date: {release_date.strftime('%Y-%m-%d')}")
+                    else:
+                        st.markdown("Release Date: Unknown")
+                    
+                    # Use expander to show/hide lyrics
+                    with st.expander("Show/Hide Lyrics"):
+                        st.write(row['Lyrics'].strip())
+                    st.markdown("---")
 
-    if st.button("Recommend Similar Songs"):
-        recommendations = recommend_songs(df, selected_song)
-        st.write(f"### Recommended Songs Similar to {selected_song}")
-        st.write(recommendations)
+            # Select a song for recommendation
+            song_list = filtered_songs['Song Title'].unique()
+            selected_song = st.selectbox("Select a Song for Recommendations", song_list)
+
+            if st.button("Recommend Similar Songs"):
+                recommendations = recommend_songs(df, selected_song)
+                st.write(f"### Recommended Songs Similar to {selected_song}")
+                st.write(recommendations)
+    else:
+        st.write("Please enter a song name to search.")
 if __name__ == '__main__':
     
     main()
