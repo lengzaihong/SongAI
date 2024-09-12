@@ -54,12 +54,12 @@ def recommend_songs(df, selected_song, top_n=5):
         return []
     song_lyrics = song_data['Lyrics'].values[0]
     song_genre = song_data['Predicted Genre'].values[0]
-
+    
     emotion_model = load_emotion_model()
     song_emotion = detect_emotions(song_lyrics, emotion_model)
-
+    
     similarity_scores = compute_similarity(df, song_lyrics)
-
+    
     df['similarity'] = similarity_scores
     recommended_songs = df[(df['Predicted Genre'] == song_genre)].sort_values(by='similarity', ascending=False).head(top_n)
     return recommended_songs[['Song Title', 'Artist', 'Album', 'Release Date', 'Predicted Genre', 'similarity']]
@@ -68,17 +68,17 @@ def main():
     st.title("Song Recommender System Based on Lyrics Emotion and Genre")
     df = download_data_from_drive()
     df['Predicted Genre'] = df.apply(predict_genre, axis=1)
-
+    
     st.write("Original Dataset with Predicted Genres:")
     st.write(df.head())
-
+    
     song_list = df['Song Title'].unique()
     selected_song = st.selectbox("Select a Song", song_list)
-
+    
     if st.button("Recommend Similar Songs"):
         recommendations = recommend_songs(df, selected_song)
         st.write(f"### Recommended Songs Similar to {selected_song}")
         st.write(recommendations)
 
-if name == 'main':
+if __name__ == '__main__':
     main()
