@@ -109,5 +109,5 @@ def main():
     else:
         st.write("Please enter a song name to search.")
 
-if _name_ == '_main_':
+if __name__ == '__main__':
     main()
