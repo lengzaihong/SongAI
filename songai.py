@@ -37,7 +37,9 @@ def load_emotion_model():
 # Emotion Detection (do not cache this function)
 def detect_emotions(lyrics, emotion_model):
     emotions = emotion_model(lyrics)
-    return emotions
+    # Extract the emotion with the highest score
+    dominant_emotion = max(emotions[0], key=lambda x: x['score'])['label']
+    return dominant_emotion
 
 # TF-IDF Vectorizer for Lyrics Similarity
 @st.cache_data
@@ -52,7 +54,7 @@ def compute_similarity(df, song_lyrics):
     return similarity_scores.flatten()
 
 # Recommend songs based on lyrics similarity, genre, and emotion
-def recommend_songs(df, selected_song, top_n=5):
+def recommend_songs(df, selected_song, selected_genre, selected_emotion, top_n=5):
     song_data = df[df['Song Title'] == selected_song]
     if song_data.empty:
         st.write("Song not found.")
@@ -68,11 +70,14 @@ def recommend_songs(df, selected_song, top_n=5):
     # Calculate song similarity based on lyrics
     similarity_scores = compute_similarity(df, song_lyrics)
     
-    # Filter songs based on genre and similarity
+    # Filter songs based on genre, emotion, and similarity
     df['similarity'] = similarity_scores
-    recommended_songs = df[(df['Predicted Genre'] == song_genre)].sort_values(by='similarity', ascending=False).head(top_n)
+    recommended_songs = df[
+        (df['Predicted Genre'] == selected_genre) &
+        (df['Predicted Emotion'] == selected_emotion)
+    ].sort_values(by='similarity', ascending=False).head(top_n)
 
-    return recommended_songs[['Song Title', 'Artist', 'Album', 'Release Date', 'Predicted Genre', 'similarity']]
+    return recommended_songs[['Song Title', 'Artist', 'Album', 'Release Date', 'Predicted Genre', 'Predicted Emotion', 'similarity']]
 
 # Streamlit App
 def main():
@@ -84,20 +89,34 @@ def main():
     # Predict genres for all songs
     df['Predicted Genre'] = df.apply(predict_genre, axis=1)
 
-    # Display the dataset (optional)
-    st.write("Original Dataset with Predicted Genres:")
-    st.write(df.head())
+    # Predict emotions for all songs
+    emotion_model = load_emotion_model()
+    df['Predicted Emotion'] = df['Lyrics'].apply(lambda lyrics: detect_emotions(lyrics, emotion_model))
+
+    # Sidebar with selection options
+    st.sidebar.header("Filter Songs")
+    
+    # Dropdown for genre selection
+    genre_options = ['Select a genre'] + list(df['Predicted Genre'].unique())
+    selected_genre = st.sidebar.selectbox("Select Genre", genre_options)
+
+    # Dropdown for emotion selection
+    emotion_options = ['Select an emotion'] + list(df['Predicted Emotion'].unique())
+    selected_emotion = st.sidebar.selectbox("Select Emotion", emotion_options)
 
     # Song selection from the dataset
     song_list = df['Song Title'].unique()
     selected_song = st.selectbox("Select a Song", song_list)
 
     if st.button("Recommend Similar Songs"):
-        # Recommend songs based on the selected song
-        recommendations = recommend_songs(df, selected_song)
-        
-        st.write(f"### Recommended Songs Similar to {selected_song}")
-        st.write(recommendations)
+        if selected_genre != 'Select a genre' and selected_emotion != 'Select an emotion':
+            # Recommend songs based on the selected song, genre, and emotion
+            recommendations = recommend_songs(df, selected_song, selected_genre, selected_emotion)
+            
+            st.write(f"### Recommended Songs Similar to {selected_song} with Genre: {selected_genre} and Emotion: {selected_emotion}")
+            st.write(recommendations)
+        else:
+            st.write("Please select both a genre and an emotion.")
 
 if __name__ == '__main__':
     main()
