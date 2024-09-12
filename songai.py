@@ -27,11 +27,17 @@ def predict_genre(row):
 def load_emotion_model():
     return pipeline("text-classification", model="j-hartmann/emotion-english-distilroberta-base", return_all_scores=True)
 def detect_emotions(lyrics, emotion_model):
-    # Truncate lyrics to a maximum length (e.g., 512 tokens)
     max_length = 512
+    # Truncate lyrics to a maximum length
     truncated_lyrics = ' '.join(lyrics.split()[:max_length])
-    emotions = emotion_model(truncated_lyrics)
+    # Ensure the input is within the model's constraints
+    try:
+        emotions = emotion_model(truncated_lyrics)
+    except Exception as e:
+        st.write(f"Error in emotion detection: {e}")
+        emotions = []
     return emotions
+
 @st.cache_data
 def compute_similarity(df, song_lyrics):
     df['Lyrics'] = df['Lyrics'].fillna('').astype(str)
