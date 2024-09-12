@@ -30,13 +30,11 @@ def predict_genre(row):
             return genre
     return 'Unknown'
 
-# Load emotion detection model
-@st.cache_data
+# Remove cache from the emotion detection model
 def load_emotion_model():
     return pipeline("text-classification", model="j-hartmann/emotion-english-distilroberta-base", return_all_scores=True)
 
-# Emotion Detection
-@st.cache_data
+# Emotion Detection (do not cache this function)
 def detect_emotions(lyrics, emotion_model):
     emotions = emotion_model(lyrics)
     return emotions
@@ -61,7 +59,7 @@ def recommend_songs(df, selected_song, top_n=5):
     song_genre = song_data['Predicted Genre'].values[0]
 
     # Detect emotion of the input song
-    emotion_model = load_emotion_model()
+    emotion_model = load_emotion_model()  # Load model without caching
     song_emotion = detect_emotions(song_lyrics, emotion_model)
 
     # Calculate song similarity based on lyrics
