@@ -1,78 +1,61 @@
-import streamlit as st
 import pandas as pd
-from transformers import pipeline
-from sklearn.metrics.pairwise import cosine_similarity
-from sklearn.feature_extraction.text import TfidfVectorizer
+import streamlit as st
 import gdown
 
 # Function to download the CSV from Google Drive
 @st.cache_data
 def download_data_from_drive():
     # Google Drive link for the dataset (convert to direct download link)
-    url = 'https://drive.google.com/uc?id=1Woi9GqjiQE7KWIem_7ICrjXfOpuTyUL_'  # Replace with your actual file ID
+    url = 'https://drive.google.com/uc?id=1Woi9GqjiQE7KWIem_7ICrjXfOpuTyUL_'  # Replace FILE_ID with the actual file ID
     output = 'songTest1.csv'  # Change to the desired output file name
     
-    # Download the file
+    # Download the file without printing progress (quiet=True)
     gdown.download(url, output, quiet=True)
     
-    # Load and return the dataset
+    # Load the dataset
     return pd.read_csv(output)
 
-# Emotion Detection using pre-trained NLP model
-@st.cache_data
-def detect_emotions(lyrics):
-    emotion_pipeline = pipeline("text-classification", model="j-hartmann/emotion-english-distilroberta-base", return_all_scores=True)
-    emotions = emotion_pipeline(lyrics)
-    return emotions
+# Load the dataset of your CSV file
+data_df = download_data_from_drive()
 
-# TF-IDF Vectorizer for Lyrics Similarity
-@st.cache_data
-def compute_similarity(df, song_lyrics):
-    vectorizer = TfidfVectorizer(stop_words='english')
-    tfidf_matrix = vectorizer.fit_transform(df['lyrics'])
-    song_tfidf = vectorizer.transform([song_lyrics])
-    similarity_scores = cosine_similarity(song_tfidf, tfidf_matrix)
-    return similarity_scores.flatten()
+# Define a dictionary with genre keywords
+genre_keywords = {
+    'Rock': ['rock', 'guitar', 'band', 'drums'],
+    'Pop': ['love', 'dance', 'hit', 'baby'],
+    'Jazz': ['jazz', 'swing', 'blues', 'saxophone'],
+    'Country': ['country', 'truck', 'road', 'cowboy'],
+    'Hip Hop': ['rap', 'hip', 'hop', 'beat', 'flow'],
+    'Classical': ['symphony', 'orchestra', 'classical', 'concerto']
+}
 
-# Recommend Songs based on emotion and category
-def recommend_songs(df, selected_song, top_n=5):
-    song_data = df[df['song_name'] == selected_song]
-    if song_data.empty:
-        st.write("Song not found.")
-        return []
+# Function to predict genre based on keywords in song title or lyrics
+def predict_genre(row):
+    for genre, keywords in genre_keywords.items():
+        text = f"{row['Song Title']} {row['Lyrics']}"  # Combine relevant text fields
+        if any(keyword.lower() in str(text).lower() for keyword in keywords):
+            return genre
+    return 'Unknown'  # Default if no keywords are matched
 
-    song_lyrics = song_data['lyrics'].values[0]
-    song_category = song_data['category'].values[0]
+# Apply the genre prediction to each row in the dataset
+data_df['Predicted Genre'] = data_df.apply(predict_genre, axis=1)
 
-    # Detect emotion of the input song
-    song_emotion = detect_emotions(song_lyrics)
-    
-    # Calculate song similarity based on lyrics
-    similarity_scores = compute_similarity(df, song_lyrics)
-    
-    # Filter songs based on emotion and category similarity
-    df['similarity'] = similarity_scores
-    recommended_songs = df[(df['category'] == song_category)].sort_values(by='similarity', ascending=False).head(top_n)
+# Add a sidebar for filtering songs by predicted genre
+st.sidebar.header('Filter Songs by Predicted Genre')
 
-    return recommended_songs[['song_name', 'artist_name', 'category', 'similarity']]
+# Get unique genres from the predicted genres column for the dropdown
+unique_genres = data_df['Predicted Genre'].unique()
+unique_genres = [genre for genre in unique_genres if genre != 'Unknown']  # Exclude 'Unknown' if desired
 
-# Streamlit App
-def main():
-    st.title("Song Recommender System Based on Lyrics Emotion and Category")
-    
-    # Load the dataset
-    df = download_data_from_drive()
+# Dropdown selection for genres
+selected_genre = st.sidebar.selectbox('Select a Genre', options=['Select a genre'] + unique_genres)
 
-    # Song selection from the dataset
-    song_list = df['song_name'].unique()
-    selected_song = st.selectbox("Select a Song", song_list)
-    
-    if st.button("Recommend Similar Songs"):
-        # Recommend songs based on emotion and category
-        recommendations = recommend_songs(df, selected_song)
-        
-        st.write("### Recommended Songs")
-        st.dataframe(recommendations)
+# Check if a valid genre is selected
+if selected_genre != 'Select a genre':
+    # Filter songs based on the selected genre
+    filtered_songs = data_df[data_df['Predicted Genre'] == selected_genre]
 
-if __name__ == '__main__':
-    main()
+    # Display the filtered songs
+    st.write(f"### Playlist: {selected_genre}")
+    st.write(filtered_songs[['Song Title', 'Artist', 'Album', 'Release Date', 'Predicted Genre']])  # Display relevant columns
+else:
+    st.write("Please select a genre to display the songs.")
