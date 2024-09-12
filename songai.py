@@ -32,7 +32,6 @@ def load_emotion_model():
     return pipeline("text-classification", model="j-hartmann/emotion-english-distilroberta-base", return_all_scores=True)
 
 def detect_emotions(lyrics, emotion_model):
-    # Truncate lyrics to a maximum length (e.g., 512 tokens)
     max_length = 512
     truncated_lyrics = ' '.join(lyrics.split()[:max_length])
     emotions = emotion_model(truncated_lyrics)
@@ -72,8 +71,35 @@ def main():
     st.write("Original Dataset with Predicted Genres:")
     st.write(df.head())
     
+    # Add genre selection
+    genres = ['All'] + list(df['Predicted Genre'].unique())
+    selected_genre = st.selectbox("Select a Genre", genres)
+    
+    if selected_genre != 'All':
+        filtered_songs = df[df['Predicted Genre'] == selected_genre]
+    else:
+        filtered_songs = df
+    
+    # Sort the filtered songs by 'Release Date' in descending order
+    filtered_songs['Release Date'] = pd.to_datetime(filtered_songs['Release Date'], errors='coerce')
+    filtered_songs = filtered_songs.sort_values(by='Release Date', ascending=False).reset_index(drop=True)
+    
+    # Display each song in a banner format with an expander to show/hide lyrics
+    st.write(f"### Songs Filtered by Genre: {selected_genre}")
+    for idx, row in filtered_songs.iterrows():
+        with st.container():
+            st.markdown(f"*No. {idx + 1}: {row['Song Title']}*")
+            st.markdown(f"*Artist:* {row['Artist']}")
+            st.markdown(f"*Album:* {row['Album']}")
+            st.markdown(f"*Release Date:* {row['Release Date'].strftime('%Y-%m-%d') if pd.notna(row['Release Date']) else 'Unknown'}")
+            
+            with st.expander("Show/Hide Lyrics"):
+                st.write(row['Lyrics'].strip())
+            st.markdown("---")
+    
+    # Song recommendation
     song_list = df['Song Title'].unique()
-    selected_song = st.selectbox("Select a Song", song_list)
+    selected_song = st.selectbox("Select a Song for Recommendations", song_list)
     
     if st.button("Recommend Similar Songs"):
         recommendations = recommend_songs(df, selected_song)
