@@ -3,12 +3,20 @@ import pandas as pd
 from transformers import pipeline
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.feature_extraction.text import TfidfVectorizer
+import gdown
 
-# Load song dataset
+# Function to download the CSV from Google Drive
 @st.cache_data
-def load_data():
-    df = pd.read_csv('/mnt/data/all_songs_data_processed.csv')
-    return df
+def download_data_from_drive():
+    # Google Drive link for the dataset (convert to direct download link)
+    url = 'https://drive.google.com/uc?id=1Woi9GqjiQE7KWIem_7ICrjXfOpuTyUL_'  # Replace with your actual file ID
+    output = 'songTest1.csv'  # Change to the desired output file name
+    
+    # Download the file
+    gdown.download(url, output, quiet=True)
+    
+    # Load and return the dataset
+    return pd.read_csv(output)
 
 # Emotion Detection using pre-trained NLP model
 @st.cache_data
@@ -53,7 +61,7 @@ def main():
     st.title("Song Recommender System Based on Lyrics Emotion and Category")
     
     # Load the dataset
-    df = load_data()
+    df = download_data_from_drive()
 
     # Song selection from the dataset
     song_list = df['song_name'].unique()
