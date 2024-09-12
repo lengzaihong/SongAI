@@ -42,6 +42,9 @@ def detect_emotions(lyrics, emotion_model):
 # TF-IDF Vectorizer for Lyrics Similarity
 @st.cache_data
 def compute_similarity(df, song_lyrics):
+    # Ensure that all lyrics are strings and replace NaN values with empty strings
+    df['Lyrics'] = df['Lyrics'].fillna('').astype(str)
+    
     vectorizer = TfidfVectorizer(stop_words='english')
     tfidf_matrix = vectorizer.fit_transform(df['Lyrics'])
     song_tfidf = vectorizer.transform([song_lyrics])
