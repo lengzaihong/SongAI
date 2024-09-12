@@ -4,14 +4,12 @@ import gdown
 from transformers import pipeline
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.feature_extraction.text import TfidfVectorizer
-
 @st.cache_data
 def download_data_from_drive():
     url = 'https://drive.google.com/uc?id=1Woi9GqjiQE7KWIem_7ICrjXfOpuTyUL_'
     output = 'songTest1.csv'
     gdown.download(url, output, quiet=True)
     return pd.read_csv(output)
-
 genre_keywords = {
     'Rock': ['rock', 'guitar', 'band', 'drums'],
     'Pop': ['love', 'dance', 'hit', 'baby'],
@@ -20,23 +18,20 @@ genre_keywords = {
     'Hip Hop': ['rap', 'hip', 'hop', 'beat', 'flow'],
     'Classical': ['symphony', 'orchestra', 'classical', 'concerto']
 }
-
 def predict_genre(row):
     for genre, keywords in genre_keywords.items():
         text = f"{row['Song Title']} {row['Lyrics']}"
         if any(keyword.lower() in str(text).lower() for keyword in keywords):
             return genre
     return 'Unknown'
-
 def load_emotion_model():
     return pipeline("text-classification", model="j-hartmann/emotion-english-distilroberta-base", return_all_scores=True)
-
 def detect_emotions(lyrics, emotion_model):
+    # Truncate lyrics to a maximum length (e.g., 512 tokens)
     max_length = 512
     truncated_lyrics = ' '.join(lyrics.split()[:max_length])
     emotions = emotion_model(truncated_lyrics)
     return emotions
-
 @st.cache_data
 def compute_similarity(df, song_lyrics):
     df['Lyrics'] = df['Lyrics'].fillna('').astype(str)
@@ -45,7 +40,6 @@ def compute_similarity(df, song_lyrics):
     song_tfidf = vectorizer.transform([song_lyrics])
     similarity_scores = cosine_similarity(song_tfidf, tfidf_matrix)
     return similarity_scores.flatten()
-
 def recommend_songs(df, selected_song, top_n=5):
     song_data = df[df['Song Title'] == selected_song]
     if song_data.empty:
@@ -61,8 +55,7 @@ def recommend_songs(df, selected_song, top_n=5):
 
     df['similarity'] = similarity_scores
     recommended_songs = df[(df['Predicted Genre'] == song_genre)].sort_values(by='similarity', ascending=False).head(top_n)
-    return recommended_songs[['Song Title', 'Artist', 'Album', 'Release Date', 'Predicted Genre', 'similarity', 'Lyrics']]
-
+    return recommended_songs[['Song Title', 'Artist', 'Album', 'Release Date', 'Predicted Genre', 'similarity']]
 def main():
     st.title("Song Recommender System Based on Lyrics Emotion and Genre")
     df = download_data_from_drive()
@@ -76,17 +69,7 @@ def main():
 
     if st.button("Recommend Similar Songs"):
         recommendations = recommend_songs(df, selected_song)
-        if not recommendations.empty:
-            st.write(f"### Recommended Songs Similar to {selected_song}")
-
-            for index, row in recommendations.iterrows():
-                with st.expander(f"{row['Song Title']} by {row['Artist']}"):
-                    st.write(f"**Album:** {row['Album']}")
-                    st.write(f"**Release Date:** {row['Release Date']}")
-                    st.write(f"**Genre:** {row['Predicted Genre']}")
-                    st.write(f"**Similarity Score:** {row['similarity']:.2f}")
-                    if st.checkbox(f"Show Lyrics for '{row['Song Title']}'", key=index):
-                        st.write(row['Lyrics'])
-
-if __name__ == '__main__':
+        st.write(f"### Recommended Songs Similar to {selected_song}")
+        st.write(recommendations)
+if name == 'main':
     main()
