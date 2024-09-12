@@ -53,12 +53,12 @@ def recommend_songs(df, selected_song, top_n=5):
         return []
     song_lyrics = song_data['Lyrics'].values[0]
     song_genre = song_data['Predicted Genre'].values[0]
-    
+
     emotion_model = load_emotion_model()
     song_emotion = detect_emotions(song_lyrics, emotion_model)
-    
+
     similarity_scores = compute_similarity(df, song_lyrics)
-    
+
     df['similarity'] = similarity_scores
     recommended_songs = df[(df['Predicted Genre'] == song_genre)].sort_values(by='similarity', ascending=False).head(top_n)
     return recommended_songs[['Song Title', 'Artist', 'Album', 'Release Date', 'Predicted Genre', 'similarity', 'Lyrics']]
@@ -67,30 +67,26 @@ def main():
     st.title("Song Recommender System Based on Lyrics Emotion and Genre")
     df = download_data_from_drive()
     df['Predicted Genre'] = df.apply(predict_genre, axis=1)
-    
+
     st.write("Original Dataset with Predicted Genres:")
     st.write(df.head())
-    
+
     song_list = df['Song Title'].unique()
     selected_song = st.selectbox("Select a Song", song_list)
-    
+
     if st.button("Recommend Similar Songs"):
         recommendations = recommend_songs(df, selected_song)
-        st.write(f"### Recommended Songs Similar to '{selected_song}'")
-        
-        for idx, row in recommendations.iterrows():
-            with st.container():
-                col1, col2 = st.columns([3, 1])
-                with col1:
-                    st.markdown(f"**{idx + 1}. {row['Song Title']}**")
-                    st.write(f"Artist: {row['Artist']}")
-                    st.write(f"Album: {row['Album']}")
-                    st.write(f"Release Date: {row['Release Date']}")
-                    st.write(f"Genre: {row['Predicted Genre']}")
-                with col2:
-                    if st.button(f"Show Lyrics {idx}", key=f"lyrics_button_{idx}"):
+        if not recommendations.empty:
+            st.write(f"### Recommended Songs Similar to {selected_song}")
+
+            for index, row in recommendations.iterrows():
+                with st.expander(f"{row['Song Title']} by {row['Artist']}"):
+                    st.write(f"**Album:** {row['Album']}")
+                    st.write(f"**Release Date:** {row['Release Date']}")
+                    st.write(f"**Genre:** {row['Predicted Genre']}")
+                    st.write(f"**Similarity Score:** {row['similarity']:.2f}")
+                    if st.checkbox(f"Show Lyrics for '{row['Song Title']}'", key=index):
                         st.write(row['Lyrics'])
-                st.markdown("---")
 
 if __name__ == '__main__':
     main()
