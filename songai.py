@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import gdown
@@ -56,7 +57,6 @@ def recommend_songs(df, selected_song, top_n=5):
     df['similarity'] = similarity_scores
     recommended_songs = df[(df['Predicted Genre'] == song_genre)].sort_values(by='similarity', ascending=False).head(top_n)
     return recommended_songs[['Song Title', 'Artist', 'Album', 'Release Date', 'Predicted Genre', 'similarity']]
-    
 def main():
     st.title("Song Recommender System Based on Lyrics Emotion and Genre")
     df = download_data_from_drive()
