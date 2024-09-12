@@ -32,7 +32,6 @@ def load_emotion_model():
     return pipeline("text-classification", model="j-hartmann/emotion-english-distilroberta-base", return_all_scores=True)
 
 def detect_emotions(lyrics, emotion_model):
-    # Truncate lyrics to a maximum length (e.g., 512 tokens)
     max_length = 512
     truncated_lyrics = ' '.join(lyrics.split()[:max_length])
     emotions = emotion_model(truncated_lyrics)
@@ -62,7 +61,7 @@ def recommend_songs(df, selected_song, top_n=5):
     
     df['similarity'] = similarity_scores
     recommended_songs = df[(df['Predicted Genre'] == song_genre)].sort_values(by='similarity', ascending=False).head(top_n)
-    return recommended_songs[['Song Title', 'Artist', 'Album', 'Release Date', 'Predicted Genre', 'similarity']]
+    return recommended_songs[['Song Title', 'Artist', 'Album', 'Release Date', 'Predicted Genre', 'similarity', 'Lyrics']]
 
 def main():
     st.title("Song Recommender System Based on Lyrics Emotion and Genre")
@@ -77,8 +76,21 @@ def main():
     
     if st.button("Recommend Similar Songs"):
         recommendations = recommend_songs(df, selected_song)
-        st.write(f"### Recommended Songs Similar to {selected_song}")
-        st.write(recommendations)
+        st.write(f"### Recommended Songs Similar to '{selected_song}'")
+        
+        for idx, row in recommendations.iterrows():
+            with st.container():
+                col1, col2 = st.columns([3, 1])
+                with col1:
+                    st.markdown(f"**{idx + 1}. {row['Song Title']}**")
+                    st.write(f"Artist: {row['Artist']}")
+                    st.write(f"Album: {row['Album']}")
+                    st.write(f"Release Date: {row['Release Date']}")
+                    st.write(f"Genre: {row['Predicted Genre']}")
+                with col2:
+                    if st.button(f"Show Lyrics {idx}", key=f"lyrics_button_{idx}"):
+                        st.write(row['Lyrics'])
+                st.markdown("---")
 
 if __name__ == '__main__':
     main()
