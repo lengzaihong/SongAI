@@ -1,3 +1,6 @@
-streamlit 
-pandas 
+streamlit
+pandas
+transformers
+scikit-learn
 gdown
+torch
