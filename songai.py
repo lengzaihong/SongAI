@@ -2,10 +2,9 @@ import streamlit as st
 import pandas as pd
 import gdown
 import ast
-from transformers import pipeline
+from transformers import pipeline, AutoTokenizer
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.feature_extraction.text import TfidfVectorizer
-from transformers import AutoTokenizer
 
 # Download the data from Google Drive
 @st.cache_data
@@ -28,11 +27,12 @@ def detect_emotions(lyrics, emotion_model, tokenizer):
     inputs = tokenizer(lyrics, return_tensors="pt", truncation=True, max_length=max_length)
     
     try:
-        emotions = emotion_model(lyrics[:tokenizer.model_max_length])
+        emotions = emotion_model(inputs['input_ids'])
     except Exception as e:
         st.write(f"Error in emotion detection: {e}")
         emotions = []
     return emotions
+
 # Compute similarity between the input song lyrics and all other songs in the dataset
 @st.cache_data
 def compute_similarity(df, song_lyrics):
@@ -53,6 +53,7 @@ def extract_youtube_url(media_str):
     except (ValueError, SyntaxError):
         return None
 
+# Recommend similar songs based on lyrics and detected emotions
 def recommend_songs(df, selected_song, top_n=5):
     song_data = df[df['Song Title'] == selected_song]
     if song_data.empty:
@@ -77,7 +78,6 @@ def recommend_songs(df, selected_song, top_n=5):
     recommended_songs = df.sort_values(by='similarity', ascending=False).head(top_n)
     
     return recommended_songs[['Song Title', 'Artist', 'Album', 'Release Date', 'similarity', 'Song URL', 'Media']]
-
 
 # Main function for the Streamlit app
 def main():
@@ -134,7 +134,7 @@ def main():
             song_list = filtered_songs['Song Title'].unique()
             selected_song = st.selectbox("Select a Song for Recommendations", song_list)
 
-             if st.button("Recommend Similar Songs"):
+            if st.button("Recommend Similar Songs"):
                 recommendations = recommend_songs(df, selected_song)
                 st.write(f"### Recommended Songs Similar to {selected_song}")
                 for idx, row in recommendations.iterrows():
@@ -162,7 +162,6 @@ def main():
                         st.markdown(f"<iframe width='400' height='315' src='https://www.youtube.com/embed/{video_id}' frameborder='0' allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share' referrerpolicy='strict-origin-when-cross-origin' allowfullscreen></iframe>", unsafe_allow_html=True)
 
                     st.markdown("---")
-
 
     else:
         st.write("Please enter a song name or artist to search.")
