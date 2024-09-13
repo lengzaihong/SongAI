@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import gdown
+import ast
 from transformers import pipeline
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -38,6 +39,16 @@ def compute_similarity(df, song_lyrics):
     similarity_scores = cosine_similarity(song_tfidf, tfidf_matrix)
     return similarity_scores.flatten()
 
+def extract_youtube_url(media_str):
+    """Extract the YouTube URL from the Media field."""
+    try:
+        media_list = ast.literal_eval(media_str)  # Safely evaluate the string to a list
+        for media in media_list:
+            if media.get('provider') == 'youtube':
+                return media.get('url')
+    except (ValueError, SyntaxError):
+        return None
+
 # Recommend similar songs based on lyrics and detected emotions
 def recommend_songs(df, selected_song, top_n=5):
     song_data = df[df['Song Title'] == selected_song]
@@ -69,11 +80,15 @@ def main():
     st.title("Song Recommender System Based on Lyrics Emotion and Similarity")
     df = download_data_from_drive()
     
-    # Search bar for song name
-    search_term = st.text_input("Enter a Song Name").strip()
+    # Search bar for song name or artist
+    search_term = st.text_input("Enter a Song Name or Artist").strip()
 
     if search_term:
-        filtered_songs = df[df['Song Title'].str.contains(search_term, case=False, na=False)]
+        # Filter by song title or artist name
+        filtered_songs = df[
+            (df['Song Title'].str.contains(search_term, case=False, na=False)) |
+            (df['Artist'].str.contains(search_term, case=False, na=False))
+        ]
 
         filtered_songs['Release Date'] = pd.to_datetime(filtered_songs['Release Date'], errors='coerce')
         filtered_songs = filtered_songs.sort_values(by='Release Date', ascending=False).reset_index(drop=True)
@@ -94,6 +109,12 @@ def main():
                     if pd.notna(song_url) and song_url:
                         st.markdown(f"[View Lyrics on Genius]({song_url})")
 
+                    # Extract and display YouTube video if URL is available
+                    youtube_url = extract_youtube_url(row.get('Media', ''))
+                    if youtube_url:
+                        video_id = youtube_url.split('watch?v=')[-1]
+                        st.markdown(f"<iframe width='400' height='315' src='https://www.youtube.com/embed/{video_id}' frameborder='0' allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share' referrerpolicy='strict-origin-when-cross-origin' allowfullscreen></iframe>", unsafe_allow_html=True)
+
                     with st.expander("Show/Hide Lyrics"):
                         formatted_lyrics = row['Lyrics'].strip().replace('\n', '\n\n')
                         st.markdown(f"<pre style='white-space: pre-wrap; font-family: monospace;'>{formatted_lyrics}</pre>", unsafe_allow_html=True)
@@ -105,9 +126,23 @@ def main():
             if st.button("Recommend Similar Songs"):
                 recommendations = recommend_songs(df, selected_song)
                 st.write(f"### Recommended Songs Similar to {selected_song}")
-                st.write(recommendations)
+                for idx, row in recommendations.iterrows():
+                    st.markdown(f"**No. {idx + 1}: {row['Song Title']}**")
+                    st.markdown(f"**Artist:** {row['Artist']}")
+                    st.markdown(f"**Album:** {row['Album']}")
+                    st.markdown(f"**Release Date:** {row['Release Date'].strftime('%Y-%m-%d') if pd.notna(row['Release Date']) else 'Unknown'}")
+                    st.markdown(f"**Similarity Score:** {row['similarity']:.2f}")
+                    
+                    # Extract and display YouTube video if URL is available
+                    youtube_url = extract_youtube_url(row.get('Media', ''))
+                    if youtube_url:
+                        video_id = youtube_url.split('watch?v=')[-1]
+                        st.markdown(f"<iframe width='400' height='315' src='https://www.youtube.com/embed/{video_id}' frameborder='0' allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share' referrerpolicy='strict-origin-when-cross-origin' allowfullscreen></iframe>", unsafe_allow_html=True)
+
+                    st.markdown("---")
+
     else:
-        st.write("Please enter a song name to search.")
+        st.write("Please enter a song name or artist to search.")
 
 if __name__ == '__main__':
     main()
