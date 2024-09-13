@@ -30,9 +30,9 @@ def detect_emotions(lyrics, emotion_model):
 
 # Preprocess the dataset to detect and store emotions for all songs
 @st.cache_data
-def preprocess_data(_emotion_model, df):
+def preprocess_data(df, emotion_model):
     df['Lyrics'] = df['Lyrics'].fillna('').astype(str)
-    df['Emotions'] = df['Lyrics'].apply(lambda x: detect_emotions(x, _emotion_model))
+    df['Emotions'] = df['Lyrics'].apply(lambda x: detect_emotions(x, emotion_model))
     return df
 
 # Filter songs based on emotion similarity
@@ -92,7 +92,7 @@ def main():
     # Load and preprocess data
     df = download_data_from_drive()
     emotion_model = load_emotion_model()
-    df = preprocess_data(emotion_model, df)
+    df = preprocess_data(df, emotion_model)
     
     # Search bar for song name
     search_term = st.text_input("Enter a Song Name").strip()
