@@ -73,7 +73,7 @@ def recommend_songs(df, selected_song, top_n=5):
     df['similarity'] = similarity_scores
     recommended_songs = df.sort_values(by='similarity', ascending=False).head(top_n)
     
-    return recommended_songs[['Song Title', 'Artist', 'Album', 'Release Date', 'similarity', 'Media']]
+    return recommended_songs[['Song Title', 'Artist', 'Album', 'Release Date', 'similarity', 'Song URL']]
 
 # Main function for the Streamlit app
 def main():
