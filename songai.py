@@ -25,6 +25,11 @@ def load_emotion_model():
 def detect_emotions(lyrics, emotion_model, tokenizer):
     max_length = 512  # Max token length for the model
     
+    # Ensure lyrics is a string
+    if not isinstance(lyrics, str):
+        st.write(f"Error: Lyrics should be of type string. Received type: {type(lyrics)}")
+        return []
+    
     # Tokenize the lyrics
     inputs = tokenizer(lyrics, return_tensors="pt", truncation=True, max_length=max_length)
     
