@@ -28,39 +28,18 @@ def detect_emotions(lyrics, emotion_model):
         emotions = []
     return emotions
 
-# Preprocess the dataset to detect and store emotions for all songs
-@st.cache_data
-def preprocess_data(df, emotion_model):
-    df['Lyrics'] = df['Lyrics'].fillna('').astype(str)
-    df['Emotions'] = df['Lyrics'].apply(lambda x: detect_emotions(x, emotion_model))
-    return df
-
-# Filter songs based on emotion similarity
-def filter_by_emotion(emotion_data, target_emotion, threshold=0.5):
-    similar_songs = []
-    for song_emotion in emotion_data:
-        similarity_score = 0
-        for emotion in song_emotion:
-            for target in target_emotion:
-                if emotion['label'] == target['label']:
-                    similarity_score += min(emotion['score'], target['score'])
-        if similarity_score >= threshold:
-            similar_songs.append(True)
-        else:
-            similar_songs.append(False)
-    return similar_songs
-
 # Compute similarity between the input song lyrics and all other songs in the dataset
 @st.cache_data
 def compute_similarity(df, song_lyrics):
+    df['Lyrics'] = df['Lyrics'].fillna('').astype(str)
     vectorizer = TfidfVectorizer(stop_words='english')
     tfidf_matrix = vectorizer.fit_transform(df['Lyrics'])
     song_tfidf = vectorizer.transform([song_lyrics])
     similarity_scores = cosine_similarity(song_tfidf, tfidf_matrix)
     return similarity_scores.flatten()
 
-# Recommend songs based on both emotion and lyrics similarity
-def recommend_songs(df, selected_song, emotion_model, top_n=5):
+# Recommend similar songs based on lyrics and detected emotions
+def recommend_songs(df, selected_song, top_n=5):
     song_data = df[df['Song Title'] == selected_song]
     if song_data.empty:
         st.write("Song not found.")
@@ -68,31 +47,27 @@ def recommend_songs(df, selected_song, emotion_model, top_n=5):
     
     song_lyrics = song_data['Lyrics'].values[0]
 
-    # Detect emotions of the selected song
-    song_emotions = detect_emotions(song_lyrics, emotion_model)
+    # Load emotion detection model
+    emotion_model = load_emotion_model()
+
+    # Detect emotions in the selected song
+    emotions = detect_emotions(song_lyrics, emotion_model)
     st.write(f"### Detected Emotions in {selected_song}:")
-    st.write(song_emotions)
+    st.write(emotions)
 
-    # Filter by emotions
-    emotion_filtered_songs = df[filter_by_emotion(df['Emotions'], song_emotions)]
+    # Compute lyrics similarity
+    similarity_scores = compute_similarity(df, song_lyrics)
 
-    # Compute lyrics similarity among emotion-matching songs
-    similarity_scores = compute_similarity(emotion_filtered_songs, song_lyrics)
-
-    # Recommend top N similar songs based on lyrics similarity
-    emotion_filtered_songs['similarity'] = similarity_scores
-    recommended_songs = emotion_filtered_songs.sort_values(by='similarity', ascending=False).head(top_n)
+    # Recommend top N similar songs
+    df['similarity'] = similarity_scores
+    recommended_songs = df.sort_values(by='similarity', ascending=False).head(top_n)
     
     return recommended_songs[['Song Title', 'Artist', 'Album', 'Release Date', 'similarity', 'Song URL']]
 
 # Main function for the Streamlit app
 def main():
-    st.title("Song Recommender System Based on Emotion and Lyrics Similarity")
-    
-    # Load and preprocess data
+    st.title("Song Recommender System Based on Lyrics Emotion and Similarity")
     df = download_data_from_drive()
-    emotion_model = load_emotion_model()
-    df = preprocess_data(df, emotion_model)
     
     # Search bar for song name
     search_term = st.text_input("Enter a Song Name").strip()
@@ -128,7 +103,7 @@ def main():
             selected_song = st.selectbox("Select a Song for Recommendations", song_list)
 
             if st.button("Recommend Similar Songs"):
-                recommendations = recommend_songs(df, selected_song, emotion_model)
+                recommendations = recommend_songs(df, selected_song)
                 st.write(f"### Recommended Songs Similar to {selected_song}")
                 st.write(recommendations)
     else:
