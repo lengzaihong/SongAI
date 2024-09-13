@@ -108,20 +108,7 @@ def main():
             if st.button("Recommend Similar Songs"):
                 recommendations = recommend_songs(df, selected_song)
                 st.write(f"### Recommended Songs Similar to {selected_song}")
-                for idx, row in recommendations.iterrows():
-                    st.markdown(f"**No. {idx + 1}: {row['Song Title']}**")
-                    st.markdown(f"**Artist:** {row['Artist']}")
-                    st.markdown(f"**Album:** {row['Album']}")
-                    st.markdown(f"**Release Date:** {row['Release Date'].strftime('%Y-%m-%d') if pd.notna(row['Release Date']) else 'Unknown'}")
-                    st.markdown(f"**Genre:** {row['Predicted Genre']}")
-                    st.markdown(f"**Similarity Score:** {row['similarity']:.2f}")
-                    
-                    # Display link to Genius.com page if URL is available
-                    song_url = row.get('Song URL', '')
-                    if pd.notna(song_url) and song_url:
-                        st.markdown(f"[View Lyrics on Genius]({song_url})")
-                    
-                    st.markdown("---")
+                st.write(recommendations)
     else:
         st.write("Please enter a song name to search.")
 
