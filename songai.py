@@ -24,23 +24,13 @@ def load_emotion_model():
 # Detect emotions in the song lyrics
 def detect_emotions(lyrics, emotion_model, tokenizer):
     max_length = 512  # Max token length for the model
-    
-    # Ensure lyrics is a string
-    if not isinstance(lyrics, str):
-        st.write(f"Error: Lyrics should be of type string. Received type: {type(lyrics)}")
-        return []
-    
-    # Tokenize the lyrics
     inputs = tokenizer(lyrics, return_tensors="pt", truncation=True, max_length=max_length)
     
     try:
-        # Use the tokenized input for emotion detection
-        outputs = emotion_model(inputs['input_ids'])[0]
-        emotions = [{"label": item['label'], "score": item['score']} for item in outputs]
+        emotions = emotion_model(lyrics[:tokenizer.model_max_length])
     except Exception as e:
         st.write(f"Error in emotion detection: {e}")
         emotions = []
-    
     return emotions
 
 # Compute similarity between the input song lyrics and all other songs in the dataset
@@ -87,7 +77,7 @@ def recommend_songs(df, selected_song, top_n=5):
     df['similarity'] = similarity_scores
     recommended_songs = df.sort_values(by='similarity', ascending=False).head(top_n)
     
-    return recommended_songs[['Song Title', 'Artist', 'Album', 'Release Date', 'similarity', 'Song URL', 'Media']]
+    return recommended_songs[['Song Title', 'Artist', 'Album', 'Release Date', 'similarity', 'Song URL']]
 
 # Main function for the Streamlit app
 def main():
