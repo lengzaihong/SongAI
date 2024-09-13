@@ -24,14 +24,28 @@ def load_emotion_model():
 # Detect emotions in the song lyrics
 def detect_emotions(lyrics, emotion_model, tokenizer):
     max_length = 512  # Max token length for the model
+    
+    # Tokenize the lyrics, but only pass the input_ids to the model
     inputs = tokenizer(lyrics, return_tensors="pt", truncation=True, max_length=max_length)
     
     try:
+        # Use the tokenized input for emotion detection
         emotions = emotion_model(inputs['input_ids'])
     except Exception as e:
         st.write(f"Error in emotion detection: {e}")
         emotions = []
-    return emotions
+    
+    # Format the output to a list of dictionaries
+    if emotions:
+        formatted_emotions = [
+            {"label": emotion['label'], "score": emotion['score']}
+            for emotion in emotions[0]
+        ]
+    else:
+        formatted_emotions = []
+
+    return formatted_emotions
+
 
 # Compute similarity between the input song lyrics and all other songs in the dataset
 @st.cache_data
