@@ -1,3 +1,54 @@
+import streamlit as st
+import pandas as pd
+import gdown
+import ast
+from transformers import pipeline
+from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.feature_extraction.text import TfidfVectorizer
+
+# Download the data from Google Drive
+@st.cache_data
+def download_data_from_drive():
+    url = 'https://drive.google.com/uc?id=1Woi9GqjiQE7KWIem_7ICrjXfOpuTyUL_'
+    output = 'songTest1.csv'
+    gdown.download(url, output, quiet=True)
+    return pd.read_csv(output)
+
+# Load emotion detection model
+def load_emotion_model():
+    return pipeline("text-classification", model="j-hartmann/emotion-english-distilroberta-base", return_all_scores=True)
+
+# Detect emotions in the song lyrics
+def detect_emotions(lyrics, emotion_model):
+    max_length = 512
+    truncated_lyrics = ' '.join(lyrics.split()[:max_length])
+    try:
+        emotions = emotion_model(truncated_lyrics)
+    except Exception as e:
+        st.write(f"Error in emotion detection: {e}")
+        emotions = []
+    return emotions
+
+# Compute similarity between the input song lyrics and all other songs in the dataset
+@st.cache_data
+def compute_similarity(df, song_lyrics):
+    df['Lyrics'] = df['Lyrics'].fillna('').astype(str)
+    vectorizer = TfidfVectorizer(stop_words='english')
+    tfidf_matrix = vectorizer.fit_transform(df['Lyrics'])
+    song_tfidf = vectorizer.transform([song_lyrics])
+    similarity_scores = cosine_similarity(song_tfidf, tfidf_matrix)
+    return similarity_scores.flatten()
+
+def extract_youtube_url(media_str):
+    """Extract the YouTube URL from the Media field."""
+    try:
+        media_list = ast.literal_eval(media_str)  # Safely evaluate the string to a list
+        for media in media_list:
+            if media.get('provider') == 'youtube':
+                return media.get('url')
+    except (ValueError, SyntaxError):
+        return None
+
 # Recommend similar songs based on lyrics and detected emotions
 def recommend_songs(df, selected_song, top_n=5):
     song_data = df[df['Song Title'] == selected_song]
