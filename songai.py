@@ -81,6 +81,20 @@ def recommend_songs(df, selected_song, top_n=5):
 
 # Main function for the Streamlit app
 def main():
+    # Add custom CSS to change the background image
+    st.markdown(
+        """
+        <style>
+        .main {
+            background-image: url('https://cdn.britannica.com/43/172743-138-545C299D/overview-Barack-Obama.jpg?w=800&h=450&c=crop');
+            background-size: cover;
+            background-position: center;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+    
     st.title("Song Recommender System Based on Lyrics Emotion and Similarity")
     df = download_data_from_drive()
 
