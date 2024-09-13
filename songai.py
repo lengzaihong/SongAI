@@ -53,7 +53,6 @@ def extract_youtube_url(media_str):
     except (ValueError, SyntaxError):
         return None
 
-# Recommend similar songs based on lyrics and detected emotions
 def recommend_songs(df, selected_song, top_n=5):
     song_data = df[df['Song Title'] == selected_song]
     if song_data.empty:
@@ -77,7 +76,7 @@ def recommend_songs(df, selected_song, top_n=5):
     df['similarity'] = similarity_scores
     recommended_songs = df.sort_values(by='similarity', ascending=False).head(top_n)
     
-    return recommended_songs[['Song Title', 'Artist', 'Album', 'Release Date', 'similarity', 'Song URL']]
+    return recommended_songs[['Song Title', 'Artist', 'Album', 'Release Date', 'similarity', 'Song URL', 'Media']]
 
 
 # Main function for the Streamlit app
@@ -135,7 +134,7 @@ def main():
             song_list = filtered_songs['Song Title'].unique()
             selected_song = st.selectbox("Select a Song for Recommendations", song_list)
 
-            if st.button("Recommend Similar Songs"):
+             if st.button("Recommend Similar Songs"):
                 recommendations = recommend_songs(df, selected_song)
                 st.write(f"### Recommended Songs Similar to {selected_song}")
                 for idx, row in recommendations.iterrows():
@@ -151,6 +150,11 @@ def main():
                     
                     st.markdown(f"**Similarity Score:** {row['similarity']:.2f}")
                     
+                    # Display link to Genius.com page if URL is available
+                    song_url = row.get('Song URL', '')
+                    if pd.notna(song_url) and song_url:
+                        st.markdown(f"[View Lyrics on Genius]({song_url})")
+
                     # Extract and display YouTube video if URL is available
                     youtube_url = extract_youtube_url(row.get('Media', ''))
                     if youtube_url:
@@ -158,6 +162,7 @@ def main():
                         st.markdown(f"<iframe width='400' height='315' src='https://www.youtube.com/embed/{video_id}' frameborder='0' allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share' referrerpolicy='strict-origin-when-cross-origin' allowfullscreen></iframe>", unsafe_allow_html=True)
 
                     st.markdown("---")
+
 
     else:
         st.write("Please enter a song name or artist to search.")
