@@ -62,11 +62,11 @@ def recommend_songs(df, selected_song, top_n=5):
     
     song_lyrics = song_data['Lyrics'].values[0]
 
-    # Load emotion detection model
-    emotion_model = load_emotion_model()
+    # Load emotion detection model and tokenizer
+    emotion_model, tokenizer = load_emotion_model()
 
     # Detect emotions in the selected song
-    emotions = detect_emotions(song_lyrics, emotion_model)
+    emotions = detect_emotions(song_lyrics, emotion_model, tokenizer)
     st.write(f"### Detected Emotions in {selected_song}:")
     st.write(emotions)
 
@@ -78,6 +78,7 @@ def recommend_songs(df, selected_song, top_n=5):
     recommended_songs = df.sort_values(by='similarity', ascending=False).head(top_n)
     
     return recommended_songs[['Song Title', 'Artist', 'Album', 'Release Date', 'similarity', 'Song URL']]
+
 
 # Main function for the Streamlit app
 def main():
