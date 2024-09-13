@@ -18,34 +18,25 @@ def download_data_from_drive():
 def load_emotion_model():
     model_name = "j-hartmann/emotion-english-distilroberta-base"
     tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = pipeline("text-classification", model=model_name, return_all_scores=True)
+    model = pipeline("text-classification", model=model_name, top_k=None)
     return model, tokenizer
 
 # Detect emotions in the song lyrics
 def detect_emotions(lyrics, emotion_model, tokenizer):
     max_length = 512  # Max token length for the model
     
-    # Tokenize the lyrics, but only pass the input_ids to the model
+    # Tokenize the lyrics
     inputs = tokenizer(lyrics, return_tensors="pt", truncation=True, max_length=max_length)
     
     try:
         # Use the tokenized input for emotion detection
-        emotions = emotion_model(inputs['input_ids'])
+        outputs = emotion_model(inputs['input_ids'])[0]
+        emotions = [{"label": item['label'], "score": item['score']} for item in outputs]
     except Exception as e:
         st.write(f"Error in emotion detection: {e}")
         emotions = []
     
-    # Format the output to a list of dictionaries
-    if emotions:
-        formatted_emotions = [
-            {"label": emotion['label'], "score": emotion['score']}
-            for emotion in emotions[0]
-        ]
-    else:
-        formatted_emotions = []
-
-    return formatted_emotions
-
+    return emotions
 
 # Compute similarity between the input song lyrics and all other songs in the dataset
 @st.cache_data
@@ -164,11 +155,6 @@ def main():
                     
                     st.markdown(f"**Similarity Score:** {row['similarity']:.2f}")
                     
-                    # Display link to Genius.com page if URL is available
-                    song_url = row.get('Song URL', '')
-                    if pd.notna(song_url) and song_url:
-                        st.markdown(f"[View Lyrics on Genius]({song_url})")
-
                     # Extract and display YouTube video if URL is available
                     youtube_url = extract_youtube_url(row.get('Media', ''))
                     if youtube_url:
