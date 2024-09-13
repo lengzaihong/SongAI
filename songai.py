@@ -5,6 +5,7 @@ import ast
 from transformers import pipeline
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.feature_extraction.text import TfidfVectorizer
+from transformers import AutoTokenizer
 
 # Download the data from Google Drive
 @st.cache_data
@@ -14,21 +15,24 @@ def download_data_from_drive():
     gdown.download(url, output, quiet=True)
     return pd.read_csv(output)
 
-# Load emotion detection model
+# Load emotion detection model and tokenizer
 def load_emotion_model():
-    return pipeline("text-classification", model="j-hartmann/emotion-english-distilroberta-base", return_all_scores=True)
+    model_name = "j-hartmann/emotion-english-distilroberta-base"
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = pipeline("text-classification", model=model_name, return_all_scores=True)
+    return model, tokenizer
 
 # Detect emotions in the song lyrics
-def detect_emotions(lyrics, emotion_model):
-    max_length = 512
-    truncated_lyrics = ' '.join(lyrics.split()[:max_length])
+def detect_emotions(lyrics, emotion_model, tokenizer):
+    max_length = 512  # Max token length for the model
+    inputs = tokenizer(lyrics, return_tensors="pt", truncation=True, max_length=max_length)
+    
     try:
-        emotions = emotion_model(truncated_lyrics)
+        emotions = emotion_model(lyrics[:tokenizer.model_max_length])
     except Exception as e:
         st.write(f"Error in emotion detection: {e}")
         emotions = []
     return emotions
-
 # Compute similarity between the input song lyrics and all other songs in the dataset
 @st.cache_data
 def compute_similarity(df, song_lyrics):
