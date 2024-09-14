@@ -174,7 +174,7 @@ def main():
             if st.button("Recommend Similar Songs"):
                 recommendations = recommend_songs(df, selected_song)
                 st.write(f"### Recommended Songs Similar to {selected_song}")
-                for idx, row in enumerate(recommendations.iterrows(), 1):
+for idx, row in enumerate(recommendations.iterrows(), 1):
     st.markdown(f"**No. {idx}: {row[1]['Song Title']}**")
     st.markdown(f"**Artist:** {row[1]['Artist']}")
     st.markdown(f"**Album:** {row[1]['Album']}")
@@ -194,6 +194,7 @@ def main():
         st.markdown(f"<iframe width='400' height='315' src='https://www.youtube.com/embed/{video_id}' frameborder='0' allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share' referrerpolicy='strict-origin-when-cross-origin' allowfullscreen></iframe>", unsafe_allow_html=True)
 
     st.markdown("---")
+
 
 
 
