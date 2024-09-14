@@ -27,10 +27,12 @@ def load_emotion_model():
     model = pipeline("text-classification", model=model_name, top_k=None)
     return model, tokenizer
 
-# Function to download emotion cache from GitHub if not found locally
+# Function to download emotion cache from GitHub or use local cache
 def download_emotion_cache():
-    cache_url = 'https://github.com/lengzaihong/SongAI/blob/main/emotion_cache.joblib'
+    cache_url = 'https://raw.githubusercontent.com/your-github-repo/emotion_cache.joblib'
     cache_file = 'emotion_cache.joblib'
+    
+    # Attempt to download the cache file if not present locally
     if not os.path.exists(cache_file):
         try:
             response = requests.get(cache_url)
@@ -38,10 +40,17 @@ def download_emotion_cache():
                 f.write(response.content)
         except Exception as e:
             st.write(f"Could not download emotion cache: {e}")
-    return joblib.load(cache_file) if os.path.exists(cache_file) else {}
+            return {}  # Return an empty cache if download fails
+    
+    # Attempt to load the cache, with error handling for corrupted files
+    try:
+        return joblib.load(cache_file)
+    except Exception as e:
+        st.write(f"Error loading emotion cache: {e}")
+        st.write("Reinitializing the cache...")
+        return {}  # Return an empty cache if loading fails
 
 # Cache for storing emotion detection results
-emotion_cache_file = 'emotion_cache.joblib'
 emotion_cache = download_emotion_cache()
 
 # Detect emotions in the song lyrics
