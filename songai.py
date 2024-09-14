@@ -164,11 +164,10 @@ def main():
     if 'page' not in st.session_state:
         st.session_state.page = 'discover'
 
-    # Back button
     if st.session_state.page != 'discover':
         if st.button('Back to Discover'):
             st.session_state.page = 'discover'
-            st.experimental_rerun()
+            st.rerun()
 
     # Search bar for song name or artist
     search_term = st.text_input("Search for a Song or Artist 🎤").strip()
