@@ -29,7 +29,7 @@ def load_emotion_model():
 
 # Function to download emotion cache from GitHub if not found locally
 def download_emotion_cache():
-    cache_url = 'https://raw.githubusercontent.com/your-github-repo/emotion_cache.joblib'
+    cache_url = 'https://github.com/lengzaihong/SongAI/blob/main/emotion_cache.joblib'
     cache_file = 'emotion_cache.joblib'
     if not os.path.exists(cache_file):
         try:
