@@ -99,7 +99,6 @@ def recommend_songs(df, selected_song, top_n=5):
     return recommended_songs[['Song Title', 'Artist', 'Album', 'Release Date', 'similarity', 'Song URL', 'Media']]
 
 
-# Main function for the Streamlit app
 def main():
     # Add custom CSS to change the background image
     st.markdown(
@@ -143,15 +142,15 @@ def main():
             for idx, row in filtered_songs.iterrows():
                 with st.container():
                     st.markdown(f"<h2 style='font-weight: bold;'> {idx + 1}. {row['Song Title']}</h2>", unsafe_allow_html=True)
-                    st.markdown(f"**Artist:** {row['Artist']}")
-                    st.markdown(f"**Album:** {row['Album']}")
-                    
+                    st.markdown(f"*Artist:* {row['Artist']}")
+                    st.markdown(f"*Album:* {row['Album']}")
+
                     # Check if 'Release Date' is a datetime object before formatting
                     if pd.notna(row['Release Date']):
-                        st.markdown(f"**Release Date:** {row['Release Date'].strftime('%Y-%m-%d')}")
+                        st.markdown(f"*Release Date:* {row['Release Date'].strftime('%Y-%m-%d')}")
                     else:
-                        st.markdown(f"**Release Date:** Unknown")
-                    
+                        st.markdown(f"*Release Date:* Unknown")
+
                     # Display link to Genius.com page if URL is available
                     song_url = row.get('Song URL', '')
                     if pd.notna(song_url) and song_url:
@@ -176,17 +175,17 @@ def main():
                 st.write(f"### Recommended Songs Similar to {selected_song}")
                 
                 for idx, row in enumerate(recommendations.iterrows(), 1):
-                    st.markdown(f"**No. {idx}: {row[1]['Song Title']}**")
-                    st.markdown(f"**Artist:** {row[1]['Artist']}")
-                    st.markdown(f"**Album:** {row[1]['Album']}")
+                    st.markdown(f"<h2 style='font-weight: bold;'> {idx}. {row[1]['Song Title']}</h2>", unsafe_allow_html=True)
+                    st.markdown(f"*Artist:* {row[1]['Artist']}")
+                    st.markdown(f"*Album:* {row[1]['Album']}")
 
                     # Check if 'Release Date' is a datetime object before formatting
                     if pd.notna(row[1]['Release Date']):
-                        st.markdown(f"**Release Date:** {row[1]['Release Date'].strftime('%Y-%m-%d')}")
+                        st.markdown(f"*Release Date:* {row[1]['Release Date'].strftime('%Y-%m-%d')}")
                     else:
-                        st.markdown(f"**Release Date:** Unknown")
+                        st.markdown(f"*Release Date:* Unknown")
 
-                    st.markdown(f"**Similarity Score:** {row[1]['similarity']:.2f}")
+                    st.markdown(f"*Similarity Score:* {row[1]['similarity']:.2f}")
 
                     # Extract and display YouTube video if URL is available
                     youtube_url = extract_youtube_url(row[1].get('Media', ''))
@@ -198,6 +197,7 @@ def main():
 
     else:
         st.write("Please enter a song name or artist to search.")
+
 
 
 if __name__ == '__main__':
