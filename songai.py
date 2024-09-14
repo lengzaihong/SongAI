@@ -103,12 +103,21 @@ def display_random_songs(df, n=5):
     random_songs = df.sample(n=n)
     st.write("### Discover Songs:")
     for idx, row in random_songs.iterrows():
+        youtube_url = extract_youtube_url(row.get('Media', ''))
+        if youtube_url:
+            # If a YouTube URL is available, make the song title a clickable hyperlink
+            song_title = f"<a href='{youtube_url}' target='_blank' style='color: #FA8072; font-weight: bold; font-size: 1.2rem;'>{row['Song Title']}</a>"
+        else:
+            # If no YouTube URL, just display the song title
+            song_title = f"<span style='font-weight: bold; font-size: 1.2rem;'>{row['Song Title']}</span>"
+
         with st.container():
-            st.markdown(f"<h3 style='font-weight: bold;'>{row['Song Title']}</h3>", unsafe_allow_html=True)
+            st.markdown(song_title, unsafe_allow_html=True)
             st.markdown(f"**Artist:** {row['Artist']}")
             st.markdown(f"**Album:** {row['Album']}")
             st.markdown(f"**Release Date:** {row['Release Date'].strftime('%Y-%m-%d') if pd.notna(row['Release Date']) else 'Unknown'}")
             st.markdown("---")
+
 
 def main():
     # Add custom CSS to change the background image
