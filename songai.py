@@ -67,6 +67,7 @@ def compute_emotion_similarity(emotions1, emotions2):
     return cosine_similarity([vector1], [vector2])[0][0]
 
 # Recommend similar songs based on lyrics and detected emotions
+# Update the recommend_songs function with progress bar
 def recommend_songs(df, selected_song, top_n=5):
     song_data = df[df['Song Title'] == selected_song]
     if song_data.empty:
@@ -86,8 +87,24 @@ def recommend_songs(df, selected_song, top_n=5):
     # Compute lyrics similarity
     similarity_scores = compute_similarity(df, song_lyrics)
 
-    # Compute emotion similarity for all songs
-    df['emotion_similarity'] = df['Lyrics'].apply(lambda x: compute_emotion_similarity(selected_song_emotions, detect_emotions(x, emotion_model, tokenizer)))
+    # Compute emotion similarity for all songs with progress bar
+    total_songs = len(df)
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+
+    def process_song(idx, lyrics):
+        emotions = detect_emotions(lyrics, emotion_model, tokenizer)
+        similarity = compute_emotion_similarity(selected_song_emotions, emotions)
+        progress = (idx + 1) / total_songs
+        progress_bar.progress(progress)
+        status_text.text(f"Detecting emotions of {idx + 1} out of {total_songs} songs")
+        return similarity
+
+    df['emotion_similarity'] = [process_song(idx, lyrics) for idx, lyrics in enumerate(df['Lyrics'])]
+
+    # Clear the progress bar and status text
+    progress_bar.empty()
+    status_text.empty()
 
     # Combine lyrics similarity and emotion similarity
     df['combined_similarity'] = (similarity_scores + df['emotion_similarity']) / 2
@@ -97,7 +114,7 @@ def recommend_songs(df, selected_song, top_n=5):
     recommended_songs = recommended_songs[recommended_songs['Song Title'] != selected_song]  # Exclude the selected song
     
     return recommended_songs[['Song Title', 'Artist', 'Album', 'Release Date', 'combined_similarity', 'Song URL', 'Media']]
-
+    
 # Main function for the Streamlit app
 def main():
     # Add custom CSS to change the background image
