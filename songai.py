@@ -68,7 +68,11 @@ def recommend_songs(df, selected_song, top_n=5):
     # Detect emotions in the selected song
     emotions = detect_emotions(song_lyrics, emotion_model, tokenizer)
     st.write(f"### Detected Emotions in {selected_song}:")
-    st.write(emotions)
+    if emotions:
+        emotion_sentence = f"The emotion of the song is {emotions[0]['label']}."
+        st.write(emotion_sentence)
+    else:
+        st.write("No emotions detected.")
 
     # Compute lyrics similarity
     similarity_scores = compute_similarity(df, song_lyrics)
@@ -98,7 +102,7 @@ def main():
     st.title("Song Recommender System Based on Lyrics Emotion and Similarity")
     df = download_data_from_drive()
 
-        # Drop duplicate entries based on 'Song Title', 'Artist', 'Album', and 'Release Date'
+    # Drop duplicate entries based on 'Song Title', 'Artist', 'Album', and 'Release Date'
     df = df.drop_duplicates(subset=['Song Title', 'Artist', 'Album', 'Release Date'], keep='first')
 
     # Convert the 'Release Date' column to datetime if possible
