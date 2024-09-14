@@ -68,7 +68,7 @@ def recommend_songs(df, selected_song, top_n=5):
     # Detect emotions in the selected song
     emotions = detect_emotions(song_lyrics, emotion_model, tokenizer)
     st.write(f"### Detected Emotions in {selected_song}:")
-    if emotions:
+    if emotions and len(emotions) > 0:
         emotion_sentence = f"The emotion of the song is {emotions[0]['label']}."
         st.write(emotion_sentence)
     else:
