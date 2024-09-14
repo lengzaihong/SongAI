@@ -119,10 +119,6 @@ def display_random_songs(df, n=5):
             st.markdown("---")
 
 def main():
-    # Initialize session state for navigation control
-    if 'viewing_search_results' not in st.session_state:
-        st.session_state.viewing_search_results = False
-
     # Add custom CSS to change the background image
     st.markdown(
         """
@@ -167,14 +163,7 @@ def main():
     # Search bar for song name or artist
     search_term = st.text_input("Search for a Song or Artist 🎤").strip()
 
-    if search_term or st.session_state.viewing_search_results:
-        st.session_state.viewing_search_results = True
-        
-        # Back button to return to the random songs display
-        if st.button("Back"):
-            st.session_state.viewing_search_results = False
-            st.rerun()
-
+    if search_term:
         # Filter by song title or artist name
         filtered_songs = df[
             (df['Song Title'].str.contains(search_term, case=False, na=False)) |
