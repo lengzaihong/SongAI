@@ -145,7 +145,7 @@ def main():
             padding: 0.5rem;
         }
         .stTextInput label {
-            color: white;
+            color: black;
         }
         </style>
         """,
