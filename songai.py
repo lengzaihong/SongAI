@@ -94,7 +94,6 @@ def process_song(args):
     similarity = compute_emotion_similarity(selected_song_emotions, emotions)
     return idx, similarity
 
-# Recommend similar songs based on lyrics and detected emotions
 def recommend_songs(df, selected_song, top_n=5):
     song_data = df[df['Song Title'] == selected_song]
     if song_data.empty:
@@ -124,13 +123,13 @@ def recommend_songs(df, selected_song, top_n=5):
         future_to_idx = {executor.submit(process_song, (idx, (row['Song Title'], row['Lyrics']), emotion_model, tokenizer, selected_song_emotions)): idx 
                          for idx, row in df.iterrows()}
         
-        emotion_similarities = [0] * total_songs
+        emotion_similarities = {}
         for future in as_completed(future_to_idx):
             idx, similarity = future.result()
             emotion_similarities[idx] = similarity
-            progress = (idx + 1) / total_songs
+            progress = (len(emotion_similarities) + 1) / total_songs
             progress_bar.progress(progress)
-            status_text.text(f"Detecting emotions of {idx + 1} out of {total_songs} songs")
+            status_text.text(f"Detecting emotions of {len(emotion_similarities) + 1} out of {total_songs} songs")
 
     # Save updated emotion cache
     joblib.dump(emotion_cache, emotion_cache_file)
@@ -140,14 +139,14 @@ def recommend_songs(df, selected_song, top_n=5):
     status_text.empty()
 
     # Combine lyrics similarity and emotion similarity
-    df['combined_similarity'] = (similarity_scores + np.array(emotion_similarities)) / 2
+    df['emotion_similarity'] = df.index.map(emotion_similarities)
+    df['combined_similarity'] = (similarity_scores + df['emotion_similarity']) / 2
 
     # Recommend top N similar songs
     recommended_songs = df.sort_values(by='combined_similarity', ascending=False).head(top_n+1)
     recommended_songs = recommended_songs[recommended_songs['Song Title'] != selected_song]
     
     return recommended_songs[['Song Title', 'Artist', 'Album', 'Release Date', 'combined_similarity', 'Song URL', 'Media']]
-
 # Main function for the Streamlit app
 def main():
     # Add custom CSS to change the background image
