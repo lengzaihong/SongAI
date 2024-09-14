@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import gdown
 import ast
+import random
 from transformers import pipeline, AutoTokenizer
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -98,6 +99,16 @@ def recommend_songs(df, selected_song, top_n=5):
     
     return recommended_songs[['Song Title', 'Artist', 'Album', 'Release Date', 'similarity', 'Song URL', 'Media']]
 
+def display_random_songs(df, n=5):
+    random_songs = df.sample(n=n)
+    st.write("### Discover Songs:")
+    for idx, row in random_songs.iterrows():
+        with st.container():
+            st.markdown(f"<h3 style='font-weight: bold;'>{row['Song Title']}</h3>", unsafe_allow_html=True)
+            st.markdown(f"**Artist:** {row['Artist']}")
+            st.markdown(f"**Album:** {row['Album']}")
+            st.markdown(f"**Release Date:** {row['Release Date'].strftime('%Y-%m-%d') if pd.notna(row['Release Date']) else 'Unknown'}")
+            st.markdown("---")
 
 def main():
     # Add custom CSS to change the background image
@@ -109,12 +120,30 @@ def main():
             background-size: cover;
             background-position: center;
         }
+        h1 {
+            font-family: 'Helvetica Neue', sans-serif;
+            color: #FAF9F6;
+            font-weight: 700;
+            text-align: center;
+        }
+        .stButton>button {
+            background-color: #fa8072;
+            color: white;
+            border-radius: 10px;
+        }
+        .stTextInput input {
+            border: 1px solid #fa8072;
+            padding: 0.5rem;
+        }
+        .stTextInput label {
+            color: white;
+        }
         </style>
         """,
         unsafe_allow_html=True
     )
     
-    st.title("Song Recommender System Based on Lyrics Emotion and Similarity")
+    st.title("🎵 Song Recommender Based on Lyrics & Emotions 🎶")
     df = download_data_from_drive()
 
     # Drop duplicate entries based on 'Song Title', 'Artist', 'Album', and 'Release Date'
@@ -122,9 +151,12 @@ def main():
 
     # Convert the 'Release Date' column to datetime if possible
     df['Release Date'] = pd.to_datetime(df['Release Date'], errors='coerce')
-    
+
+    # Display random songs before the user enters a search term
+    display_random_songs(df)
+
     # Search bar for song name or artist
-    search_term = st.text_input("Enter a Song Name or Artist").strip()
+    search_term = st.text_input("Search for a Song or Artist 🎤").strip()
 
     if search_term:
         # Filter by song title or artist name
@@ -145,18 +177,15 @@ def main():
                     st.markdown(f"*Artist:* {row['Artist']}")
                     st.markdown(f"*Album:* {row['Album']}")
 
-                    # Check if 'Release Date' is a datetime object before formatting
                     if pd.notna(row['Release Date']):
                         st.markdown(f"*Release Date:* {row['Release Date'].strftime('%Y-%m-%d')}")
                     else:
                         st.markdown(f"*Release Date:* Unknown")
 
-                    # Display link to Genius.com page if URL is available
                     song_url = row.get('Song URL', '')
                     if pd.notna(song_url) and song_url:
                         st.markdown(f"[View Lyrics on Genius]({song_url})")
 
-                    # Extract and display YouTube video if URL is available
                     youtube_url = extract_youtube_url(row.get('Media', ''))
                     if youtube_url:
                         video_id = youtube_url.split('watch?v=')[-1]
@@ -168,7 +197,7 @@ def main():
                     st.markdown("---")
 
             song_list = filtered_songs['Song Title'].unique()
-            selected_song = st.selectbox("Select a Song for Recommendations", song_list)
+            selected_song = st.selectbox("Select a Song for Recommendations 🎧", song_list)
 
             if st.button("Recommend Similar Songs"):
                 recommendations = recommend_songs(df, selected_song)
@@ -179,7 +208,6 @@ def main():
                     st.markdown(f"*Artist:* {row[1]['Artist']}")
                     st.markdown(f"*Album:* {row[1]['Album']}")
 
-                    # Check if 'Release Date' is a datetime object before formatting
                     if pd.notna(row[1]['Release Date']):
                         st.markdown(f"*Release Date:* {row[1]['Release Date'].strftime('%Y-%m-%d')}")
                     else:
@@ -187,7 +215,6 @@ def main():
 
                     st.markdown(f"*Similarity Score:* {row[1]['similarity']:.2f}")
 
-                    # Extract and display YouTube video if URL is available
                     youtube_url = extract_youtube_url(row[1].get('Media', ''))
                     if youtube_url:
                         video_id = youtube_url.split('watch?v=')[-1]
@@ -197,8 +224,6 @@ def main():
 
     else:
         st.write("Please enter a song name or artist to search.")
-
-
 
 if __name__ == '__main__':
     main()
