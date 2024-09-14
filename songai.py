@@ -86,7 +86,7 @@ def main():
         """
         <style>
         .main {
-            background-image: url('https://cdn.britannica.com/43/172743-138-545C299D/overview-Barack-Obama.jpg?w=800&h=450&c=crop');
+            background-image: url('https://static.vecteezy.com/system/resources/thumbnails/020/333/164/small_2x/stephen-foster-memorial-day-illustration-with-copy-space-area-and-blue-background-suitable-to-use-on-memorial-day-event-vector.jpg');
             background-size: cover;
             background-position: center;
         }
