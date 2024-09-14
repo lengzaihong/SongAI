@@ -128,7 +128,7 @@ def main():
         }
         .stButton>button {
             background-color: #fa8072;
-            color: black;
+            color: white;
             border-radius: 10px;
         }
         .stTextInput input {
@@ -136,7 +136,7 @@ def main():
             padding: 0.5rem;
         }
         .stTextInput label {
-            color: white;
+            color: black;
         }
         </style>
         """,
