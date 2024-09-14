@@ -87,11 +87,17 @@ def recommend_songs(df, selected_song, top_n=5):
     # Compute lyrics similarity
     similarity_scores = compute_similarity(df, song_lyrics)
 
-    # Recommend top N similar songs
+    # Add similarity scores to the dataframe
     df['similarity'] = similarity_scores
+
+    # Exclude the selected song from recommendations
+    df = df[df['Song Title'] != selected_song]
+
+    # Recommend top N similar songs
     recommended_songs = df.sort_values(by='similarity', ascending=False).head(top_n)
     
     return recommended_songs[['Song Title', 'Artist', 'Album', 'Release Date', 'similarity', 'Song URL', 'Media']]
+
 
 # Main function for the Streamlit app
 def main():
