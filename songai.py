@@ -25,7 +25,11 @@ def load_emotion_model():
 # Detect emotions in the song lyrics
 def detect_emotions(lyrics, emotion_model, tokenizer):
     try:
+        # Truncate the lyrics to fit the model's max token limit
         emotions = emotion_model(lyrics[:tokenizer.model_max_length])
+        if not isinstance(emotions, list):
+            st.write(f"Unexpected emotion detection result: {emotions}")
+            return []
     except Exception as e:
         st.write(f"Error in emotion detection: {e}")
         emotions = []
@@ -34,8 +38,15 @@ def detect_emotions(lyrics, emotion_model, tokenizer):
 # Convert detected emotions to a dictionary of scores
 def emotions_to_dict(emotions):
     emotion_scores = {}
-    for emotion in emotions:
-        emotion_scores[emotion['label']] = emotion['score']
+    try:
+        for emotion in emotions:
+            # Check if 'label' and 'score' are present in each emotion result
+            if 'label' in emotion and 'score' in emotion:
+                emotion_scores[emotion['label']] = emotion['score']
+            else:
+                st.write(f"Invalid emotion entry: {emotion}")
+    except TypeError:
+        st.write(f"Expected a list of emotions but got: {emotions}")
     return emotion_scores
 
 # Compute similarity between the input song lyrics and all other songs in the dataset
