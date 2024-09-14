@@ -5,6 +5,7 @@ import ast
 from transformers import pipeline, AutoTokenizer
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.feature_extraction.text import TfidfVectorizer
+import numpy as np
 
 # Download the data from Google Drive
 @st.cache_data
@@ -53,6 +54,18 @@ def extract_youtube_url(media_str):
     except (ValueError, SyntaxError):
         return None
 
+# Compute emotion similarity between two sets of emotions
+def compute_emotion_similarity(emotions1, emotions2):
+    emotion_dict1 = {e['label']: e['score'] for e in emotions1[0]}
+    emotion_dict2 = {e['label']: e['score'] for e in emotions2[0]}
+    
+    all_emotions = set(emotion_dict1.keys()) | set(emotion_dict2.keys())
+    
+    vector1 = [emotion_dict1.get(e, 0) for e in all_emotions]
+    vector2 = [emotion_dict2.get(e, 0) for e in all_emotions]
+    
+    return cosine_similarity([vector1], [vector2])[0][0]
+
 # Recommend similar songs based on lyrics and detected emotions
 def recommend_songs(df, selected_song, top_n=5):
     song_data = df[df['Song Title'] == selected_song]
@@ -66,18 +79,24 @@ def recommend_songs(df, selected_song, top_n=5):
     emotion_model, tokenizer = load_emotion_model()
 
     # Detect emotions in the selected song
-    emotions = detect_emotions(song_lyrics, emotion_model, tokenizer)
+    selected_song_emotions = detect_emotions(song_lyrics, emotion_model, tokenizer)
     st.write(f"### Detected Emotions in {selected_song}:")
-    st.write(emotions)
+    st.write(selected_song_emotions)
 
     # Compute lyrics similarity
     similarity_scores = compute_similarity(df, song_lyrics)
 
+    # Compute emotion similarity for all songs
+    df['emotion_similarity'] = df['Lyrics'].apply(lambda x: compute_emotion_similarity(selected_song_emotions, detect_emotions(x, emotion_model, tokenizer)))
+
+    # Combine lyrics similarity and emotion similarity
+    df['combined_similarity'] = (similarity_scores + df['emotion_similarity']) / 2
+
     # Recommend top N similar songs
-    df['similarity'] = similarity_scores
-    recommended_songs = df.sort_values(by='similarity', ascending=False).head(top_n)
+    recommended_songs = df.sort_values(by='combined_similarity', ascending=False).head(top_n+1)  # +1 to exclude the selected song itself
+    recommended_songs = recommended_songs[recommended_songs['Song Title'] != selected_song]  # Exclude the selected song
     
-    return recommended_songs[['Song Title', 'Artist', 'Album', 'Release Date', 'similarity', 'Song URL', 'Media']]
+    return recommended_songs[['Song Title', 'Artist', 'Album', 'Release Date', 'combined_similarity', 'Song URL', 'Media']]
 
 # Main function for the Streamlit app
 def main():
@@ -98,7 +117,7 @@ def main():
     st.title("Song Recommender System Based on Lyrics Emotion and Similarity")
     df = download_data_from_drive()
 
-        # Drop duplicate entries based on 'Song Title', 'Artist', 'Album', and 'Release Date'
+    # Drop duplicate entries based on 'Song Title', 'Artist', 'Album', and 'Release Date'
     df = df.drop_duplicates(subset=['Song Title', 'Artist', 'Album', 'Release Date'], keep='first')
 
     # Convert the 'Release Date' column to datetime if possible
@@ -165,7 +184,7 @@ def main():
                     else:
                         st.markdown(f"**Release Date:** Unknown")
                     
-                    st.markdown(f"**Similarity Score:** {row['similarity']:.2f}")
+                    st.markdown(f"**Combined Similarity Score:** {row['combined_similarity']:.2f}")
                     
                     # Extract and display YouTube video if URL is available
                     youtube_url = extract_youtube_url(row.get('Media', ''))
