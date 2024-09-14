@@ -160,21 +160,10 @@ def main():
     # Convert the 'Release Date' column to datetime if possible
     df['Release Date'] = pd.to_datetime(df['Release Date'], errors='coerce')
 
-    # Initialize session state for navigation
-    if 'page' not in st.session_state:
-        st.session_state.page = 'discover'
-
-    # Back button
-    if st.session_state.page != 'discover':
-        if st.button('Back to Discover'):
-            st.session_state.page = 'discover'
-            st.rerun()
-
     # Search bar for song name or artist
     search_term = st.text_input("Search for a Song or Artist 🎤").strip()
 
     if search_term:
-        st.session_state.page = 'search'
         # Filter by song title or artist name
         filtered_songs = df[
             (df['Song Title'].str.contains(search_term, case=False, na=False)) |
@@ -216,7 +205,6 @@ def main():
             selected_song = st.selectbox("Select a Song for Recommendations 🎧", song_list)
 
             if st.button("Recommend Similar Songs"):
-                st.session_state.page = 'recommendations'
                 recommendations = recommend_songs(df, selected_song)
                 st.write(f"### Recommended Songs Similar to {selected_song}")
                 
@@ -240,7 +228,6 @@ def main():
                     st.markdown("---")
     else:
         # Display random songs if no search term is provided
-        st.session_state.page = 'discover'
         display_random_songs(df)
 
 if __name__ == '__main__':
