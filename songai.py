@@ -90,7 +90,8 @@ def recommend_songs(df, selected_song, top_n=5):
     # Add similarity scores to the dataframe
     df['similarity'] = similarity_scores
 
-
+    # Exclude the selected song from recommendations
+    df = df[df['Song Title'] != selected_song]
 
     # Recommend top N similar songs
     recommended_songs = df.sort_values(by='similarity', ascending=False).head(top_n)
