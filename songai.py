@@ -122,7 +122,7 @@ def main():
         }
         h1 {
             font-family: 'Helvetica Neue', sans-serif;
-            color: #FAF9F6;
+            color: black;
             font-weight: 700;
             text-align: center;
         }
