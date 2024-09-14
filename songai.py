@@ -89,7 +89,6 @@ def main():
             background-image: url('https://wallpapercave.com/wp/wp11163687.jpg');
             background-size: cover;
             background-position: center;
-            opacity: 0.2;
         }
         </style>
         """,
