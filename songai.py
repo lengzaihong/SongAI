@@ -173,7 +173,7 @@ def main():
         # Back button to return to the random songs display
         if st.button("Back"):
             st.session_state.viewing_search_results = False
-            st.experimental_rerun()
+            st.rerun()
 
         # Filter by song title or artist name
         filtered_songs = df[
