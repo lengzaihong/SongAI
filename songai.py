@@ -103,21 +103,12 @@ def display_random_songs(df, n=5):
     random_songs = df.sample(n=n)
     st.write("### Discover Songs:")
     for idx, row in random_songs.iterrows():
-        youtube_url = extract_youtube_url(row.get('Media', ''))
-        if youtube_url:
-            # If a YouTube URL is available, make the song title a clickable hyperlink
-            song_title = f"<a href='{youtube_url}' target='_blank' style='color: #FA8072; font-weight: bold; font-size: 1.2rem;'>{row['Song Title']}</a>"
-        else:
-            # If no YouTube URL, just display the song title
-            song_title = f"<span style='font-weight: bold; font-size: 1.2rem;'>{row['Song Title']}</span>"
-
         with st.container():
-            st.markdown(song_title, unsafe_allow_html=True)
+            st.markdown(f"<h3 style='font-weight: bold;'>{row['Song Title']}</h3>", unsafe_allow_html=True)
             st.markdown(f"**Artist:** {row['Artist']}")
             st.markdown(f"**Album:** {row['Album']}")
             st.markdown(f"**Release Date:** {row['Release Date'].strftime('%Y-%m-%d') if pd.notna(row['Release Date']) else 'Unknown'}")
             st.markdown("---")
-
 
 def main():
     # Add custom CSS to change the background image
@@ -137,7 +128,7 @@ def main():
         }
         .stButton>button {
             background-color: #fa8072;
-            color: white;
+            color: black;
             border-radius: 10px;
         }
         .stTextInput input {
@@ -145,7 +136,7 @@ def main():
             padding: 0.5rem;
         }
         .stTextInput label {
-            color: black;
+            color: white;
         }
         </style>
         """,
@@ -160,9 +151,6 @@ def main():
 
     # Convert the 'Release Date' column to datetime if possible
     df['Release Date'] = pd.to_datetime(df['Release Date'], errors='coerce')
-
-    # Display random songs before the user enters a search term
-    display_random_songs(df)
 
     # Search bar for song name or artist
     search_term = st.text_input("Search for a Song or Artist 🎤").strip()
@@ -230,9 +218,9 @@ def main():
                         st.markdown(f"<iframe width='400' height='315' src='https://www.youtube.com/embed/{video_id}' frameborder='0' allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share' referrerpolicy='strict-origin-when-cross-origin' allowfullscreen></iframe>", unsafe_allow_html=True)
 
                     st.markdown("---")
-
     else:
-        st.write("Please enter a song name or artist to search.")
+        # Display random songs if no search term is provided
+        display_random_songs(df)
 
 if __name__ == '__main__':
     main()
