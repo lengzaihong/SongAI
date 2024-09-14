@@ -86,7 +86,7 @@ def main():
         """
         <style>
         .main {
-            background-image: url('https://static.vecteezy.com/system/resources/thumbnails/020/333/164/small_2x/stephen-foster-memorial-day-illustration-with-copy-space-area-and-blue-background-suitable-to-use-on-memorial-day-event-vector.jpg');
+            background-image: url('https://wallpapercave.com/wp/wp11163687.jpg');
             background-size: cover;
             background-position: center;
         }
