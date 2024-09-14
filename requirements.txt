@@ -5,3 +5,4 @@ scikit-learn
 gdown
 torch
 numpy
+joblib
