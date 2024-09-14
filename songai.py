@@ -164,6 +164,7 @@ def main():
     if 'page' not in st.session_state:
         st.session_state.page = 'discover'
 
+    # Back button
     if st.session_state.page != 'discover':
         if st.button('Back to Discover'):
             st.session_state.page = 'discover'
