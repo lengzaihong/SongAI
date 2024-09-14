@@ -119,6 +119,10 @@ def display_random_songs(df, n=5):
             st.markdown("---")
 
 def main():
+    # Initialize session state for page control
+    if 'page' not in st.session_state:
+        st.session_state.page = 'main'
+
     # Add custom CSS to change the background image
     st.markdown(
         """
@@ -160,75 +164,67 @@ def main():
     # Convert the 'Release Date' column to datetime if possible
     df['Release Date'] = pd.to_datetime(df['Release Date'], errors='coerce')
 
-    # Search bar for song name or artist
-    search_term = st.text_input("Search for a Song or Artist 🎤").strip()
+    if st.session_state.page == 'main':
+        # Search bar for song name or artist
+        search_term = st.text_input("Search for a Song or Artist 🎤").strip()
 
-    if search_term:
-        # Filter by song title or artist name
-        filtered_songs = df[
-            (df['Song Title'].str.contains(search_term, case=False, na=False)) |
-            (df['Artist'].str.contains(search_term, case=False, na=False))
-        ]
+        if search_term:
+            # Filter by song title or artist name
+            filtered_songs = df[
+                (df['Song Title'].str.contains(search_term, case=False, na=False)) |
+                (df['Artist'].str.contains(search_term, case=False, na=False))
+            ]
 
-        filtered_songs = filtered_songs.sort_values(by='Release Date', ascending=False).reset_index(drop=True)
+            filtered_songs = filtered_songs.sort_values(by='Release Date', ascending=False).reset_index(drop=True)
 
-        if filtered_songs.empty:
-            st.write("No songs found matching the search term.")
+            if filtered_songs.empty:
+                st.write("No songs found matching the search term.")
+            else:
+                st.write(f"### Search Results for: {search_term}")
+                for idx, row in filtered_songs.iterrows():
+                    with st.container():
+                        st.markdown(f"<h2 style='font-weight: bold;'> {idx + 1}. {row['Song Title']}</h2>", unsafe_allow_html=True)
+                        st.markdown(f"*Artist:* {row['Artist']}")
+                        st.markdown(f"*Album:* {row['Album']}")
+
+                        if pd.notna(row['Release Date']):
+                            st.markdown(f"*Release Date:* {row['Release Date'].strftime('%Y-%m-%d')}")
+                        else:
+                            st.markdown(f"*Release Date:* Unknown")
+
+                        song_url = row.get('Song URL', '')
+                        if pd.notna(song_url) and song_url:
+                            st.markdown(f"[View Lyrics on Genius]({song_url})")
+
+                        youtube_url = extract_youtube_url(row.get('Media', ''))
+                        if youtube_url:
+                            video_id = youtube_url.split('watch?v=')[-1]
+                            st.markdown(f"<iframe width='400' height='315' src='https://www.youtube.com/embed/{video_id}' frameborder='0' allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share' referrerpolicy='strict-origin-when-cross-origin' allowfullscreen></iframe>", unsafe_allow_html=True)
+
+                        st.markdown("---")
+
         else:
-            st.write(f"### Search Results for: {search_term}")
-            for idx, row in filtered_songs.iterrows():
-                with st.container():
-                    st.markdown(f"<h2 style='font-weight: bold;'> {idx + 1}. {row['Song Title']}</h2>", unsafe_allow_html=True)
-                    st.markdown(f"*Artist:* {row['Artist']}")
-                    st.markdown(f"*Album:* {row['Album']}")
+            display_random_songs(df)
+    elif st.session_state.page == 'recommendation':
+        # Display recommendations for the selected song
+        selected_song = st.selectbox("Select a Song to Get Recommendations", df['Song Title'].unique())
+        if st.button("Recommend Songs"):
+            recommended_songs = recommend_songs(df, selected_song)
+            if not recommended_songs.empty:
+                st.write(f"### Songs Similar to {selected_song}")
+                for idx, row in recommended_songs.iterrows():
+                    with st.container():
+                        st.markdown(f"**{idx + 1}. {row['Song Title']}** by {row['Artist']}")
+                        st.write(f"*Album:* {row['Album']}, *Release Date:* {row['Release Date']}")
+                        youtube_url = extract_youtube_url(row.get('Media', ''))
+                        if youtube_url:
+                            st.write(f"[Watch on YouTube]({youtube_url})")
+                        st.markdown("---")
 
-                    if pd.notna(row['Release Date']):
-                        st.markdown(f"*Release Date:* {row['Release Date'].strftime('%Y-%m-%d')}")
-                    else:
-                        st.markdown(f"*Release Date:* Unknown")
-
-                    song_url = row.get('Song URL', '')
-                    if pd.notna(song_url) and song_url:
-                        st.markdown(f"[View Lyrics on Genius]({song_url})")
-
-                    youtube_url = extract_youtube_url(row.get('Media', ''))
-                    if youtube_url:
-                        video_id = youtube_url.split('watch?v=')[-1]
-                        st.markdown(f"<iframe width='400' height='315' src='https://www.youtube.com/embed/{video_id}' frameborder='0' allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share' referrerpolicy='strict-origin-when-cross-origin' allowfullscreen></iframe>", unsafe_allow_html=True)
-
-                    with st.expander("Show/Hide Lyrics"):
-                        formatted_lyrics = row['Lyrics'].strip().replace('\n', '\n\n')
-                        st.markdown(f"<pre style='white-space: pre-wrap; font-family: monospace;'>{formatted_lyrics}</pre>", unsafe_allow_html=True)
-                    st.markdown("---")
-
-            song_list = filtered_songs['Song Title'].unique()
-            selected_song = st.selectbox("Select a Song for Recommendations 🎧", song_list)
-
-            if st.button("Recommend Similar Songs"):
-                recommendations = recommend_songs(df, selected_song)
-                st.write(f"### Recommended Songs Similar to {selected_song}")
-                
-                for idx, row in enumerate(recommendations.iterrows(), 1):
-                    st.markdown(f"<h2 style='font-weight: bold;'> {idx}. {row[1]['Song Title']}</h2>", unsafe_allow_html=True)
-                    st.markdown(f"*Artist:* {row[1]['Artist']}")
-                    st.markdown(f"*Album:* {row[1]['Album']}")
-
-                    if pd.notna(row[1]['Release Date']):
-                        st.markdown(f"*Release Date:* {row[1]['Release Date'].strftime('%Y-%m-%d')}")
-                    else:
-                        st.markdown(f"*Release Date:* Unknown")
-
-                    st.markdown(f"*Similarity Score:* {row[1]['similarity']:.2f}")
-
-                    youtube_url = extract_youtube_url(row[1].get('Media', ''))
-                    if youtube_url:
-                        video_id = youtube_url.split('watch?v=')[-1]
-                        st.markdown(f"<iframe width='400' height='315' src='https://www.youtube.com/embed/{video_id}' frameborder='0' allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share' referrerpolicy='strict-origin-when-cross-origin' allowfullscreen></iframe>", unsafe_allow_html=True)
-
-                    st.markdown("---")
-    else:
-        # Display random songs if no search term is provided
-        display_random_songs(df)
+        # Add a "Back" button to return to the main page
+        if st.button("Back"):
+            st.session_state.page = 'main'
+            st.experimental_rerun()
 
 if __name__ == '__main__':
     main()
