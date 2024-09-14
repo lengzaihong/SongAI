@@ -15,7 +15,6 @@ def download_data_from_drive():
     return pd.read_csv(output)
 
 # Load emotion detection model and tokenizer
-@st.cache_resource
 def load_emotion_model():
     model_name = "j-hartmann/emotion-english-distilroberta-base"
     tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -24,48 +23,19 @@ def load_emotion_model():
 
 # Detect emotions in the song lyrics
 def detect_emotions(lyrics, emotion_model, tokenizer):
-    try:
-        # Truncate lyrics if necessary (model has token length limits)
-        tokens = tokenizer(lyrics, return_tensors="pt", truncation=True, max_length=512)
-        inputs = tokenizer.decode(tokens["input_ids"][0])
-
-        # Detect emotions on truncated input
-        emotions = emotion_model(inputs)
-
-        # Check if the output is a list of lists and unwrap it
-        if isinstance(emotions, list) and len(emotions) == 1 and isinstance(emotions[0], list):
-            emotions = emotions[0]  # Unwrap the nested list
-
-        # Ensure we have the correct format (list of dicts)
-        if isinstance(emotions, list) and all(isinstance(emotion, dict) for emotion in emotions):
-            return emotions
-        else:
-            st.write(f"Unexpected emotion detection result: {emotions}")
-            return []
+    max_length = 512  # Max token length for the model
+    inputs = tokenizer(lyrics, return_tensors="pt", truncation=True, max_length=max_length)
     
+    try:
+        emotions = emotion_model(lyrics[:tokenizer.model_max_length])
     except Exception as e:
         st.write(f"Error in emotion detection: {e}")
-        return []
-
-
-# Convert detected emotions to a dictionary of scores
-def emotions_to_dict(emotions):
-    emotion_scores = {}
-    try:
-        for emotion in emotions:
-            # Check if 'label' and 'score' are present in each emotion result
-            if 'label' in emotion and 'score' in emotion:
-                emotion_scores[emotion['label']] = emotion['score']
-            else:
-                st.write(f"Invalid emotion entry: {emotion}")
-    except TypeError:
-        st.write(f"Expected a list of emotions but got: {emotions}")
-    return emotion_scores
-
+        emotions = []
+    return emotions
 
 # Compute similarity between the input song lyrics and all other songs in the dataset
 @st.cache_data
-def compute_lyrics_similarity(df, song_lyrics):
+def compute_similarity(df, song_lyrics):
     df['Lyrics'] = df['Lyrics'].fillna('').astype(str)
     vectorizer = TfidfVectorizer(stop_words='english')
     tfidf_matrix = vectorizer.fit_transform(df['Lyrics'])
@@ -73,23 +43,17 @@ def compute_lyrics_similarity(df, song_lyrics):
     similarity_scores = cosine_similarity(song_tfidf, tfidf_matrix)
     return similarity_scores.flatten()
 
-# Compute similarity between emotion vectors
-def compute_emotion_similarity(target_emotions, all_emotions):
-    target_vector = pd.DataFrame([target_emotions]).fillna(0).values
-    all_vectors = pd.DataFrame(all_emotions).fillna(0).values
-    return cosine_similarity(target_vector, all_vectors).flatten()
-
-# Extract YouTube URL from the media field
 def extract_youtube_url(media_str):
+    """Extract the YouTube URL from the Media field."""
     try:
-        media_list = ast.literal_eval(media_str)
+        media_list = ast.literal_eval(media_str)  # Safely evaluate the string to a list
         for media in media_list:
             if media.get('provider') == 'youtube':
                 return media.get('url')
     except (ValueError, SyntaxError):
         return None
 
-# Recommend songs based on both emotion detection and lyrics similarity
+# Recommend similar songs based on lyrics and detected emotions
 def recommend_songs(df, selected_song, top_n=5):
     song_data = df[df['Song Title'] == selected_song]
     if song_data.empty:
@@ -103,27 +67,14 @@ def recommend_songs(df, selected_song, top_n=5):
 
     # Detect emotions in the selected song
     emotions = detect_emotions(song_lyrics, emotion_model, tokenizer)
-    target_emotions = emotions_to_dict(emotions)
-    
     st.write(f"### Detected Emotions in {selected_song}:")
     st.write(emotions)
 
     # Compute lyrics similarity
-    lyrics_similarity_scores = compute_lyrics_similarity(df, song_lyrics)
+    similarity_scores = compute_similarity(df, song_lyrics)
 
-    # Detect emotions for all songs in the dataset
-    all_emotions = []
-    for lyrics in df['Lyrics']:
-        song_emotions = detect_emotions(lyrics, emotion_model, tokenizer)
-        all_emotions.append(emotions_to_dict(song_emotions))
-    
-    # Compute emotion similarity
-    emotion_similarity_scores = compute_emotion_similarity(target_emotions, all_emotions)
-
-    # Combine both similarity scores (you can adjust the weights of lyrics vs emotion similarity if needed)
-    df['similarity'] = 0.5 * lyrics_similarity_scores + 0.5 * emotion_similarity_scores
-    
     # Recommend top N similar songs
+    df['similarity'] = similarity_scores
     recommended_songs = df.sort_values(by='similarity', ascending=False).head(top_n)
     
     return recommended_songs[['Song Title', 'Artist', 'Album', 'Release Date', 'similarity', 'Song URL', 'Media']]
@@ -135,7 +86,7 @@ def main():
         """
         <style>
         .main {
-            background-image: url('');
+            background-image: url('https://wallpapercave.com/wp/wp11163687.jpg');
             background-size: cover;
             background-position: center;
         }
@@ -147,7 +98,7 @@ def main():
     st.title("Song Recommender System Based on Lyrics Emotion and Similarity")
     df = download_data_from_drive()
 
-    # Drop duplicate entries
+        # Drop duplicate entries based on 'Song Title', 'Artist', 'Album', and 'Release Date'
     df = df.drop_duplicates(subset=['Song Title', 'Artist', 'Album', 'Release Date'], keep='first')
 
     # Convert the 'Release Date' column to datetime if possible
