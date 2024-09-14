@@ -25,18 +25,24 @@ def load_emotion_model():
 # Detect emotions in the song lyrics
 def detect_emotions(lyrics, emotion_model, tokenizer):
     try:
-        # Truncate the lyrics to fit the model's max token limit
-        emotions = emotion_model(lyrics[:tokenizer.model_max_length])
-        
-        # Check if emotions is a list of lists and extract the first list
-        if isinstance(emotions, list) and len(emotions) == 1 and isinstance(emotions[0], list):
-            emotions = emotions[0]
+        # Split lyrics into smaller chunks if necessary (model has token length limits)
+        tokens = tokenizer(lyrics, return_tensors="pt", truncation=True, max_length=512)
+        inputs = tokenizer.decode(tokens["input_ids"][0])
+
+        # Detect emotions on truncated input
+        emotions = emotion_model(inputs)
+
+        # Check if the output is in the expected format (list of dicts)
+        if isinstance(emotions, list) and all(isinstance(emotion, dict) for emotion in emotions):
+            return emotions
+        else:
+            st.write(f"Unexpected emotion detection result: {emotions}")
+            return []
             
     except Exception as e:
         st.write(f"Error in emotion detection: {e}")
-        emotions = []
-        
-    return emotions
+        return []
+
 
 # Convert detected emotions to a dictionary of scores
 def emotions_to_dict(emotions):
