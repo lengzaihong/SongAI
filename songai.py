@@ -174,26 +174,26 @@ def main():
             if st.button("Recommend Similar Songs"):
                 recommendations = recommend_songs(df, selected_song)
                 st.write(f"### Recommended Songs Similar to {selected_song}")
-for idx, row in enumerate(recommendations.iterrows(), 1):
-    st.markdown(f"**No. {idx}: {row[1]['Song Title']}**")
-    st.markdown(f"**Artist:** {row[1]['Artist']}")
-    st.markdown(f"**Album:** {row[1]['Album']}")
-
-    # Check if 'Release Date' is a datetime object before formatting
-    if pd.notna(row[1]['Release Date']):
-        st.markdown(f"**Release Date:** {row[1]['Release Date'].strftime('%Y-%m-%d')}")
-    else:
-        st.markdown(f"**Release Date:** Unknown")
-
-    st.markdown(f"**Similarity Score:** {row[1]['similarity']:.2f}")
-
-    # Extract and display YouTube video if URL is available
-    youtube_url = extract_youtube_url(row[1].get('Media', ''))
-    if youtube_url:
-        video_id = youtube_url.split('watch?v=')[-1]
-        st.markdown(f"<iframe width='400' height='315' src='https://www.youtube.com/embed/{video_id}' frameborder='0' allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share' referrerpolicy='strict-origin-when-cross-origin' allowfullscreen></iframe>", unsafe_allow_html=True)
-
-    st.markdown("---")
+                for idx, row in enumerate(recommendations.iterrows(), 1):
+                st.markdown(f"**No. {idx}: {row[1]['Song Title']}**")
+                st.markdown(f"**Artist:** {row[1]['Artist']}")
+                st.markdown(f"**Album:** {row[1]['Album']}")
+            
+                # Check if 'Release Date' is a datetime object before formatting
+                if pd.notna(row[1]['Release Date']):
+                    st.markdown(f"**Release Date:** {row[1]['Release Date'].strftime('%Y-%m-%d')}")
+                else:
+                    st.markdown(f"**Release Date:** Unknown")
+            
+                st.markdown(f"**Similarity Score:** {row[1]['similarity']:.2f}")
+            
+                # Extract and display YouTube video if URL is available
+                youtube_url = extract_youtube_url(row[1].get('Media', ''))
+                if youtube_url:
+                    video_id = youtube_url.split('watch?v=')[-1]
+                    st.markdown(f"<iframe width='400' height='315' src='https://www.youtube.com/embed/{video_id}' frameborder='0' allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share' referrerpolicy='strict-origin-when-cross-origin' allowfullscreen></iframe>", unsafe_allow_html=True)
+            
+                st.markdown("---")
 
 
     else:
