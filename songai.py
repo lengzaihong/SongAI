@@ -68,7 +68,21 @@ def recommend_songs(df, selected_song, top_n=5):
     # Detect emotions in the selected song
     emotions = detect_emotions(song_lyrics, emotion_model, tokenizer)
     st.write(f"### Detected Emotions in {selected_song}:")
-    st.write(emotions)
+    
+    if emotions and len(emotions) > 0:
+        # Extract the emotions list from the first item
+        emotion_list = emotions[0]
+        
+        # Find the emotion with the highest score
+        if isinstance(emotion_list, list) and len(emotion_list) > 0:
+            top_emotion = max(emotion_list, key=lambda x: x['score'])
+            emotion_sentence = f"The emotion of the song is {top_emotion['label']}."
+        else:
+            emotion_sentence = "No emotions detected."
+        
+        st.write(emotion_sentence)
+    else:
+        st.write("No emotions detected.")
 
     # Compute lyrics similarity
     similarity_scores = compute_similarity(df, song_lyrics)
