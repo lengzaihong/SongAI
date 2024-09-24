@@ -162,7 +162,7 @@ def main():
         unsafe_allow_html=True
     )
     
-    st.title("🎵 Song Recommender Based on Lyrics & Emotions 🎶")
+    st.title("🎵 Song Recommender System 🎶")
     df = download_data_from_drive()
 
     # Drop duplicate entries based on 'Song Title', 'Artist', 'Album', and 'Release Date'
